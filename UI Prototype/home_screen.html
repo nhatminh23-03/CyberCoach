@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CyberCoach | Sovereign Editorial Cybersecurity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-low": "#191c1e",
+                        "on-secondary-fixed": "#271900",
+                        "primary-container": "#0a192f",
+                        "secondary-fixed-dim": "#e1c290",
+                        "on-primary-fixed-variant": "#39475f",
+                        "on-tertiary-fixed-variant": "#374767",
+                        "outline-variant": "#44474d",
+                        "on-primary-container": "#74829d",
+                        "on-secondary-fixed-variant": "#58431d",
+                        "on-background": "#e0e3e5",
+                        "outline": "#8f9097",
+                        "error": "#ffb4ab",
+                        "on-secondary": "#402d08",
+                        "on-surface-variant": "#c5c6cd",
+                        "primary-fixed": "#d6e3ff",
+                        "surface-container": "#1d2022",
+                        "surface": "#101415",
+                        "tertiary": "#b6c6ed",
+                        "surface-container-high": "#272a2c",
+                        "on-surface": "#e0e3e5",
+                        "primary": "#b9c7e4",
+                        "on-primary": "#233148",
+                        "on-tertiary": "#20304f",
+                        "surface-dim": "#101415",
+                        "secondary-container": "#5b461f",
+                        "background": "#101415",
+                        "primary-fixed-dim": "#b9c7e4",
+                        "on-secondary-container": "#d2b483",
+                        "inverse-surface": "#e0e3e5",
+                        "on-primary-fixed": "#0d1c32",
+                        "surface-variant": "#323537",
+                        "tertiary-container": "#061836",
+                        "secondary": "#e1c290",
+                        "tertiary-fixed-dim": "#b6c6ed",
+                        "surface-container-lowest": "#0b0f10",
+                        "tertiary-fixed": "#d8e2ff",
+                        "secondary-fixed": "#fedeaa",
+                        "on-tertiary-container": "#7282a5",
+                        "error-container": "#93000a",
+                        "surface-tint": "#b9c7e4",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#2d3133",
+                        "on-tertiary-fixed": "#091b39",
+                        "inverse-primary": "#515f78",
+                        "surface-container-highest": "#323537",
+                        "surface-bright": "#363a3b",
+                        "on-error-container": "#ffdad6"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Manrope"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(50, 53, 55, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        .ghost-border {
+            border: 1px solid rgba(68, 71, 77, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-secondary selection:text-on-secondary">
+<!-- TopNavBar -->
+<nav class="bg-[#0a192f] transition-colors duration-500 flex justify-between items-center w-full px-8 py-4 max-w-full mx-auto fixed top-0 z-50">
+<div class="text-xl font-black tracking-tighter text-[#f8fafc]">CyberCoach</div>
+<div class="hidden md:flex items-center space-x-12">
+<a class="text-[#e1c290] border-b-2 border-[#e1c290] pb-1 font-bold font-['Plus_Jakarta_Sans'] uppercase tracking-[0.1em] text-[10px]" href="#">Dashboard</a>
+<a class="text-[#b9c7e4] hover:text-[#f8fafc] transition-colors font-['Plus_Jakarta_Sans'] uppercase tracking-[0.1em] text-[10px]" href="#">Scans</a>
+<a class="text-[#b9c7e4] hover:text-[#f8fafc] transition-colors font-['Plus_Jakarta_Sans'] uppercase tracking-[0.1em] text-[10px]" href="#">Privacy</a>
+<a class="text-[#b9c7e4] hover:text-[#f8fafc] transition-colors font-['Plus_Jakarta_Sans'] uppercase tracking-[0.1em] text-[10px]" href="#">Support</a>
+</div>
+<div class="flex items-center space-x-6">
+<span class="material-symbols-outlined text-[#b9c7e4] cursor-pointer hover:text-secondary transition-colors">search</span>
+<button class="bg-secondary text-on-secondary px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">PRO</button>
+<div class="w-8 h-8 bg-surface-variant flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-xs text-on-surface-variant">person</span>
+</div>
+</div>
+</nav>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="bg-primary-container min-h-[870px] flex flex-col justify-center px-8 md:px-24 relative overflow-hidden">
+<div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+<div class="lg:col-span-8 space-y-10">
+<span class="inline-block border border-secondary/30 bg-secondary/10 px-4 py-1 text-[10px] uppercase tracking-[0.2em] font-bold text-secondary">Advanced Cyber Defense</span>
+<h1 class="font-headline text-5xl md:text-7xl lg:text-8xl font-extrabold text-white leading-[0.95] tracking-tighter max-w-4xl">
+                        Check suspicious messages, links, screenshots, and documents before you act.
+                    </h1>
+<div class="flex flex-col sm:flex-row gap-6 pt-4">
+<button class="bg-secondary text-on-secondary px-10 py-5 font-bold uppercase tracking-widest text-xs hover:bg-secondary-fixed transition-colors active:scale-95">Start a Scan</button>
+<button class="border border-outline-variant text-white px-10 py-5 font-bold uppercase tracking-widest text-xs hover:bg-surface-container-high transition-colors active:scale-95">See how it works</button>
+</div>
+</div>
+<!-- Intelligence Card -->
+<div class="lg:col-span-4 flex justify-end">
+<div class="glass-panel ghost-border p-8 w-full max-w-sm space-y-8 relative group">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<p class="text-[10px] uppercase tracking-[0.15em] text-secondary font-bold">Real-time status</p>
+<p class="text-2xl font-headline font-bold text-white tracking-tight">ENCRYPTED</p>
+</div>
+<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div class="pt-8 border-t border-outline-variant/30 space-y-6">
+<div class="flex items-center gap-4">
+<div class="w-2 h-2 bg-secondary animate-pulse"></div>
+<span class="text-xs uppercase tracking-widest font-semibold text-on-surface-variant">Identity Shield Active</span>
+</div>
+<div class="space-y-2">
+<div class="h-1 bg-surface-container-highest w-full">
+<div class="h-full bg-secondary w-2/3"></div>
+</div>
+<div class="flex justify-between text-[9px] uppercase tracking-widest text-outline">
+<span>System Integrity</span>
+<span>98.4% Secure</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Abstract background element -->
+<div class="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary/5 blur-[120px]"></div>
+</section>
+<!-- Scan Framework Section -->
+<section class="bg-surface py-32 px-8 md:px-24">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+<div class="space-y-4">
+<p class="text-[10px] uppercase tracking-[0.2em] font-bold text-secondary">Analysis Core</p>
+<h2 class="font-headline text-4xl md:text-5xl font-extrabold tracking-tighter text-white">Comprehensive Detection</h2>
+</div>
+<p class="text-on-surface-variant max-w-md text-lg leading-relaxed font-light">
+                        Our sovereign intelligence layer dissects digital assets across five critical vectors to ensure absolute verification.
+                    </p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-px bg-outline-variant/20 ghost-border">
+<!-- Tabs Sidebar -->
+<div class="lg:col-span-3 bg-surface-container-lowest divide-y divide-outline-variant/20">
+<button class="w-full p-8 text-left group bg-surface-container-low border-l-4 border-secondary">
+<span class="block text-[10px] uppercase tracking-widest text-secondary font-bold mb-2">Vector 01</span>
+<span class="block text-white font-headline font-bold text-lg">Message Scan</span>
+</button>
+<button class="w-full p-8 text-left group hover:bg-surface-container-low transition-colors">
+<span class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-2">Vector 02</span>
+<span class="block text-on-surface-variant group-hover:text-white font-headline font-bold text-lg">URL Scan</span>
+</button>
+<button class="w-full p-8 text-left group hover:bg-surface-container-low transition-colors">
+<span class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-2">Vector 03</span>
+<span class="block text-on-surface-variant group-hover:text-white font-headline font-bold text-lg">Screenshot</span>
+</button>
+<button class="w-full p-8 text-left group hover:bg-surface-container-low transition-colors">
+<span class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-2">Vector 04</span>
+<span class="block text-on-surface-variant group-hover:text-white font-headline font-bold text-lg">AR Scanner</span>
+</button>
+<button class="w-full p-8 text-left group hover:bg-surface-container-low transition-colors">
+<span class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-2">Vector 05</span>
+<span class="block text-on-surface-variant group-hover:text-white font-headline font-bold text-lg">Document Scan</span>
+</button>
+</div>
+<!-- Main Scan Module -->
+<div class="lg:col-span-6 bg-surface-container-low p-12 flex flex-col justify-between min-h-[500px]">
+<div class="space-y-8">
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 bg-primary-container ghost-border flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-3xl">chat_bubble</span>
+</div>
+<h3 class="text-3xl font-headline font-bold text-white">Message Scan Module</h3>
+</div>
+<p class="text-on-surface-variant text-xl leading-relaxed max-w-xl">
+                                Advanced linguistic decomposition and behavioral analysis for SMS, WhatsApp, and Email. We detect social engineering patterns before they compromise your data.
+                            </p>
+<div class="grid grid-cols-2 gap-8 pt-8">
+<div class="ghost-border p-6 space-y-4 bg-surface-container-lowest/50">
+<span class="material-symbols-outlined text-secondary">sms</span>
+<p class="text-[10px] uppercase tracking-widest font-bold text-white">SMS Analysis</p>
+<p class="text-sm text-on-surface-variant">Phishing detection via sender reputation and link metadata.</p>
+</div>
+<div class="ghost-border p-6 space-y-4 bg-surface-container-lowest/50">
+<span class="material-symbols-outlined text-secondary">mark_as_unread</span>
+<p class="text-[10px] uppercase tracking-widest font-bold text-white">Email Logic</p>
+<p class="text-sm text-on-surface-variant">Header verification and payload sentiment scoring.</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4 pt-12">
+<button class="bg-secondary text-on-secondary px-8 py-4 text-xs font-bold uppercase tracking-widest">Execute Analysis</button>
+<button class="border border-outline-variant text-white px-8 py-4 text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high">Logs</button>
+</div>
+</div>
+<!-- Sidebar Info -->
+<div class="lg:col-span-3 bg-surface-container-lowest p-12 border-l border-outline-variant/20">
+<div class="h-full flex flex-col space-y-12">
+<div class="space-y-6">
+<h4 class="text-xl font-headline font-bold text-white leading-tight">Simple, human language. Zero technical jargon.</h4>
+<div class="space-y-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-sm mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="space-y-1">
+<p class="text-sm font-bold text-white">Privacy First</p>
+<p class="text-xs text-on-surface-variant">Your data is purged instantly after analysis.</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-sm mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="space-y-1">
+<p class="text-sm font-bold text-white">Clear Logic</p>
+<p class="text-xs text-on-surface-variant">Understand exactly why a scan was flagged.</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-sm mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="space-y-1">
+<p class="text-sm font-bold text-white">Safe Steps</p>
+<p class="text-xs text-on-surface-variant">Actionable advice on what to do next.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto ghost-border bg-primary-container p-6 relative overflow-hidden group">
+<div class="relative z-10 space-y-4">
+<p class="text-[9px] uppercase tracking-widest font-bold text-secondary">Global Threat Map</p>
+<p class="text-2xl font-headline font-bold text-white">2.4M</p>
+<p class="text-[10px] text-outline leading-tight">Threats mitigated in the last 24 hours across our network nodes.</p>
+</div>
+<div class="absolute top-0 right-0 p-4 opacity-20">
+<span class="material-symbols-outlined text-6xl text-secondary">public</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Editorial Section -->
+<section class="bg-white py-32 px-8 md:px-24 overflow-hidden">
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+<div class="order-2 lg:order-1 relative">
+<div class="ghost-border aspect-[4/5] bg-surface-container relative overflow-hidden">
+<img alt="Modern minimal workspace" class="w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-700" data-alt="Modern workspace with high-end minimal desk, professional lighting, and focused atmosphere in a premium office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLNuUwfOEHDT24KCjBy9JTMStr3RIGeIVnpgZ2Ir0d4A5_zp9-BFJFweI5Bja-5pt_wjW1PjQMz6v3dZbwZTO67Cw2K9CyyWgm9KRFq5ONlQUY-pj9CRDd037FIaWLbtVS2bUMC579riDH_GrYA3vJorShen-qAFOnPL8fCwj05DDAo6Tc7IL9OnkL6FS7Kv1eYDU_QhgiiGuyhW4TOszz2sEMswcGPleS4aQ2QqgTugvGlsJGY5rO6-S7kX-izIXZiHieBRGCcXw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0a192f]/40 to-transparent"></div>
+</div>
+<div class="absolute -bottom-8 -right-8 bg-secondary p-8 hidden md:block">
+<p class="text-on-secondary font-headline text-2xl font-bold tracking-tight">Sovereign Protection</p>
+</div>
+</div>
+<div class="order-1 lg:order-2 space-y-12">
+<div class="space-y-6">
+<p class="text-[10px] uppercase tracking-[0.2em] font-bold text-primary-container">The Human Philosophy</p>
+<h2 class="font-headline text-5xl md:text-6xl font-extrabold tracking-tighter text-[#0a192f] leading-tight">
+                            Built for individuals who value their peace of mind.
+                        </h2>
+</div>
+<div class="space-y-8 text-surface-variant text-xl leading-relaxed font-light">
+<p>
+                            CyberCoach was engineered for those who demand excellence and discretion. We've removed the complexity of security, leaving only the power.
+                        </p>
+<p>
+                            Our platform acts as a digital concierge, vetting every interaction with the precision of an intelligence agency, delivered through an interface of pure clarity.
+                        </p>
+</div>
+<div class="pt-4">
+<a class="inline-flex items-center gap-4 text-[#0a192f] font-bold uppercase tracking-widest text-xs group" href="#">
+                            Explore the Methodology
+                            <span class="material-symbols-outlined group-hover:translate-x-2 transition-transform">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-[#0a192f] pt-24 pb-12 px-12">
+<div class="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
+<div class="col-span-1 space-y-8">
+<div class="text-xl font-bold text-[#f8fafc]">CyberCoach</div>
+<p class="text-[#b9c7e4] text-sm leading-relaxed font-light">
+                        The sovereign standard in digital verification and executive cybersecurity education.
+                    </p>
+<div class="inline-flex items-center gap-3 border border-outline-variant/30 px-4 py-2 bg-surface-container-lowest/20">
+<span class="material-symbols-outlined text-secondary text-sm">lock</span>
+<span class="text-[9px] uppercase tracking-widest font-bold text-white">Enterprise Standard Encryption</span>
+</div>
+</div>
+<div class="space-y-8">
+<h5 class="uppercase tracking-[0.1em] text-[10px] font-bold text-[#e1c290]">Resources</h5>
+<ul class="space-y-4">
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Methodology</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Threat Intelligence</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Case Studies</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Verification Logic</a></li>
+</ul>
+</div>
+<div class="space-y-8">
+<h5 class="uppercase tracking-[0.1em] text-[10px] font-bold text-[#e1c290]">Network Nodes</h5>
+<ul class="space-y-4">
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Primary Core</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Sovereign Relay</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Edge Validation</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">API Gateway</a></li>
+</ul>
+</div>
+<div class="space-y-8">
+<h5 class="uppercase tracking-[0.1em] text-[10px] font-bold text-[#e1c290]">Institutional</h5>
+<ul class="space-y-4">
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Privacy Policy</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Terms of Service</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Compliance</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors text-sm" href="#">Legal Repository</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-7xl mx-auto pt-12 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-8">
+<p class="text-[10px] uppercase tracking-widest text-outline font-bold">© 2024 CyberCoach Sovereign Editorial. All Rights Reserved.</p>
+<div class="flex gap-8">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-secondary transition-colors text-xl">brand_family</span>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-secondary transition-colors text-xl">shield_with_heart</span>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-secondary transition-colors text-xl">lan</span>
+</div>
+</div>
+</footer>
+</main>
+</body></html>

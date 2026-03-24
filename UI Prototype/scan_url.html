@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CyberCoach | URL Scan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#191c1e",
+              "on-secondary-fixed": "#271900",
+              "primary-container": "#0a192f",
+              "secondary-fixed-dim": "#e1c290",
+              "on-primary-fixed-variant": "#39475f",
+              "on-tertiary-fixed-variant": "#374767",
+              "outline-variant": "#44474d",
+              "on-primary-container": "#74829d",
+              "on-secondary-fixed-variant": "#58431d",
+              "on-background": "#e0e3e5",
+              "outline": "#8f9097",
+              "error": "#ffb4ab",
+              "on-secondary": "#402d08",
+              "on-surface-variant": "#c5c6cd",
+              "primary-fixed": "#d6e3ff",
+              "surface-container": "#1d2022",
+              "surface": "#101415",
+              "tertiary": "#b6c6ed",
+              "surface-container-high": "#272a2c",
+              "on-surface": "#e0e3e5",
+              "primary": "#b9c7e4",
+              "on-primary": "#233148",
+              "on-tertiary": "#20304f",
+              "surface-dim": "#101415",
+              "secondary-container": "#5b461f",
+              "background": "#101415",
+              "primary-fixed-dim": "#b9c7e4",
+              "on-secondary-container": "#d2b483",
+              "inverse-surface": "#e0e3e5",
+              "on-primary-fixed": "#0d1c32",
+              "surface-variant": "#323537",
+              "tertiary-container": "#061836",
+              "secondary": "#e1c290",
+              "tertiary-fixed-dim": "#b6c6ed",
+              "surface-container-lowest": "#0b0f10",
+              "tertiary-fixed": "#d8e2ff",
+              "secondary-fixed": "#fedeaa",
+              "on-tertiary-container": "#7282a5",
+              "error-container": "#93000a",
+              "surface-tint": "#b9c7e4",
+              "on-error": "#690005",
+              "inverse-on-surface": "#2d3133",
+              "on-tertiary-fixed": "#091b39",
+              "inverse-primary": "#515f78",
+              "surface-container-highest": "#323537",
+              "surface-bright": "#363a3b",
+              "on-error-container": "#ffdad6"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Manrope"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-panel {
+        background: rgba(50, 53, 55, 0.6);
+        backdrop-filter: blur(20px);
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-secondary selection:text-on-secondary">
+<!-- Top Navigation Shell -->
+<header class="bg-[#0a192f] transition-colors duration-500 flex justify-between items-center w-full px-8 py-4 max-w-full mx-auto sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black tracking-tighter text-[#f8fafc]">CyberCoach</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-[#b9c7e4] hover:text-[#f8fafc] transition-colors font-label uppercase tracking-[0.1em] text-[10px]" href="#">Dashboard</a>
+<a class="text-[#e1c290] border-b-2 border-[#e1c290] pb-1 font-bold font-label uppercase tracking-[0.1em] text-[10px]" href="#">Scans</a>
+<a class="text-[#b9c7e4] hover:text-[#f8fafc] transition-colors font-label uppercase tracking-[0.1em] text-[10px]" href="#">Privacy</a>
+<a class="text-[#b9c7e4] hover:text-[#f8fafc] transition-colors font-label uppercase tracking-[0.1em] text-[10px]" href="#">Support</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[#b9c7e4] text-sm">search</span>
+<input class="bg-primary-container border-0 text-[10px] font-label uppercase tracking-widest pl-10 pr-4 py-2 w-48 focus:ring-1 focus:ring-secondary text-on-surface" placeholder="QUICK SEARCH..." type="text"/>
+</div>
+<button class="bg-secondary text-on-secondary px-4 py-1.5 font-label font-bold text-[10px] tracking-widest uppercase hover:opacity-90 transition-all active:scale-95">PRO</button>
+<div class="w-8 h-8 bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+</div>
+</header>
+<main class="min-h-screen grid grid-cols-12">
+<!-- Main Analysis Canvas -->
+<section class="col-span-12 lg:col-span-8 bg-surface border-r border-outline-variant/20 p-8 lg:p-16">
+<div class="max-w-3xl">
+<p class="font-label uppercase tracking-[0.2em] text-secondary text-xs mb-4">Sovereign Intelligence Unit</p>
+<h1 class="font-headline text-5xl md:text-7xl font-extrabold tracking-tighter text-on-background leading-tight mb-12">
+                    URL <span class="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary">SCAN</span> ENGINE
+                </h1>
+<div class="space-y-12">
+<!-- URL Input Section -->
+<div class="relative group">
+<label class="block font-label uppercase tracking-[0.1em] text-[10px] font-bold text-on-surface-variant mb-3">Target Endpoint URL</label>
+<div class="flex flex-col md:flex-row gap-4">
+<div class="flex-grow relative">
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant focus:border-secondary focus:ring-0 text-lg font-mono py-4 text-on-surface transition-colors" type="text" value="http://paypa1-security-check-login.com"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-error" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<button class="bg-secondary text-on-secondary px-8 py-4 font-label font-bold tracking-[0.2em] uppercase hover:bg-secondary-fixed-dim transition-colors">Analyze</button>
+</div>
+</div>
+<!-- Scan Features Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="p-6 bg-surface-container-low border border-outline-variant/10 hover:border-secondary/30 transition-all group cursor-pointer">
+<span class="material-symbols-outlined text-secondary mb-4 text-3xl" data-icon="account_tree">account_tree</span>
+<h3 class="font-headline font-bold text-sm tracking-tight mb-2">DEEP LINK CRAWL</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Recursive extraction of all navigational nodes and nested resources.</p>
+</div>
+<div class="p-6 bg-surface-container-low border border-outline-variant/10 hover:border-secondary/30 transition-all group cursor-pointer">
+<span class="material-symbols-outlined text-secondary mb-4 text-3xl" data-icon="verified_user">verified_user</span>
+<h3 class="font-headline font-bold text-sm tracking-tight mb-2">DOMAIN REPUTATION</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Cross-referencing global blacklists and historical domain registry data.</p>
+</div>
+<div class="p-6 bg-surface-container-low border border-outline-variant/10 hover:border-secondary/30 transition-all group cursor-pointer">
+<span class="material-symbols-outlined text-secondary mb-4 text-3xl" data-icon="fingerprint">fingerprint</span>
+<h3 class="font-headline font-bold text-sm tracking-tight mb-2">PHISHING SIGNATURE</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Heuristic matching against 1.2M+ known deceptive UI patterns.</p>
+</div>
+</div>
+<!-- Active Analysis Status (HUD Style) -->
+<div class="bg-primary-container p-8 border-l-4 border-secondary">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="font-label uppercase tracking-widest text-xs font-bold text-secondary mb-1">Live Interception Log</h4>
+<p class="text-xs text-on-primary-container">Session ID: CC-772-ALPHA</p>
+</div>
+<div class="px-3 py-1 bg-secondary/10 border border-secondary/20 text-secondary font-label text-[9px] tracking-widest uppercase">Encrypted Session</div>
+</div>
+<div class="space-y-3 font-mono text-[11px] text-[#b9c7e4]">
+<div class="flex gap-4 opacity-50"><span class="text-secondary">[08:42:11]</span> Initializing sandbox environment...</div>
+<div class="flex gap-4 opacity-75"><span class="text-secondary">[08:42:13]</span> Resolving DNS query for: paypa1-security-check-login.com</div>
+<div class="flex gap-4"><span class="text-secondary">[08:42:14]</span> <span class="text-error font-bold">CRITICAL:</span> Homograph attack detected (p-a-y-p-a-1)</div>
+<div class="flex gap-4 animate-pulse"><span class="text-secondary">[08:42:15]</span> Analyzing SSL certificate chain...</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Sidebar Panel -->
+<aside class="col-span-12 lg:col-span-4 bg-surface-container-lowest p-8 lg:p-12 space-y-16">
+<!-- Global Threat Map -->
+<div>
+<div class="flex items-center justify-between mb-8">
+<h2 class="font-headline font-bold tracking-tight text-xl">Global Threat Map</h2>
+<span class="material-symbols-outlined text-secondary" data-icon="language">language</span>
+</div>
+<div class="relative w-full aspect-video bg-surface-container-high overflow-hidden border border-outline-variant/20">
+<img alt="minimalist vector world map in dark navy and gold showing glowing tactical data points and threat trajectories" class="w-full h-full object-cover opacity-60 grayscale" data-location="Global" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8Xbv717_vPVkKmWxwbmehd35o1T3zNqialinf3uQXqlWiptEDxpWn9KcQIa2e49q8XarvRL_8kHRgcmjMEE0muJ7ILvL0h_FZKleu5ZKkYV9J0uBtJlHvPiDUeJk5T4Mh9fRoM53cvNoTGobnd2ziKIcwQMssIRITIAcNJ9I5i4azIpzAL8ny3p0jIrOHvgWYW3Xae-O2UdmAs76l0dIROjjj_Jw6Dkl8lY-mtiokO7qbcHHsJdJlLf8ymw71__Pgt2dImtRtv1A"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent"></div>
+<!-- HUD Overlays -->
+<div class="absolute top-4 left-4 space-y-2">
+<div class="flex items-center gap-2 bg-black/40 backdrop-blur-md px-2 py-1 border border-white/5">
+<span class="w-1.5 h-1.5 bg-error animate-ping"></span>
+<span class="font-label text-[8px] tracking-widest uppercase">Active Breach: RU-492</span>
+</div>
+</div>
+</div>
+<div class="mt-4 flex justify-between text-[10px] font-label tracking-widest uppercase text-on-surface-variant">
+<span>Region: NA/WEST</span>
+<span class="text-secondary">Latency: 14ms</span>
+</div>
+</div>
+<!-- Red Flags Checklist -->
+<div>
+<h2 class="font-headline font-bold tracking-tight text-xl mb-8">URL Red Flags</h2>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 bg-surface-container-low border-l-2 border-error">
+<span class="material-symbols-outlined text-error text-xl" data-icon="spellcheck" style="font-variation-settings: 'FILL' 1;">spellcheck</span>
+<div>
+<p class="font-headline font-bold text-xs">HOMOGRAPH TRAP</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Misspelled brand names ('paypa1')</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 bg-surface-container-low border-l-2 border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-xl" data-icon="lock_open">lock_open</span>
+<div>
+<p class="font-headline font-bold text-xs">NON-SECURE PROTOCOL</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Missing HTTPS/SSL Layering</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 bg-surface-container-low border-l-2 border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-xl" data-icon="history">history</span>
+<div>
+<p class="font-headline font-bold text-xs">FRESH DOMAIN</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Registered within last 48 hours</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 bg-surface-container-low border-l-2 border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-xl" data-icon="layers">layers</span>
+<div>
+<p class="font-headline font-bold text-xs">NESTED SUBDOMAINS</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Excessive URL complexity</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 py-4 border border-outline-variant font-label text-[10px] font-bold tracking-[0.3em] uppercase hover:bg-surface-variant transition-all">Download Full Report</button>
+</div>
+</aside>
+</main>
+<!-- Footer Shell -->
+<footer class="bg-[#0a192f] transition-colors duration-500 w-full px-12 py-16 grid grid-cols-1 md:grid-cols-4 gap-12 border-t border-outline-variant/10">
+<div class="col-span-1 md:col-span-1">
+<span class="text-lg font-bold text-[#f8fafc] mb-6 block">CyberCoach</span>
+<p class="text-[#b9c7e4] text-xs leading-relaxed max-w-xs">Sovereign editorial security systems for the digital elite. Protecting assets with architectural precision.</p>
+</div>
+<div class="space-y-4">
+<h5 class="font-label uppercase tracking-[0.1em] text-[10px] font-bold text-[#e1c290]">Resources</h5>
+<ul class="space-y-2 text-xs">
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Documentation</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">API Reference</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Security Whitepapers</a></li>
+</ul>
+</div>
+<div class="space-y-4">
+<h5 class="font-label uppercase tracking-[0.1em] text-[10px] font-bold text-[#e1c290]">Network Nodes</h5>
+<ul class="space-y-2 text-xs">
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Global Status</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Uptime Monitor</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Incident Reports</a></li>
+</ul>
+</div>
+<div class="space-y-4">
+<h5 class="font-label uppercase tracking-[0.1em] text-[10px] font-bold text-[#e1c290]">Legal</h5>
+<ul class="space-y-2 text-xs">
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Terms of Service</a></li>
+<li><a class="text-[#b9c7e4] hover:text-[#e1c290] transition-colors" href="#">Cookie Policy</a></li>
+</ul>
+</div>
+<div class="col-span-full pt-12 mt-12 border-t border-white/5 flex flex-col md:flex-row justify-between gap-6">
+<span class="font-label uppercase tracking-[0.1em] text-[10px] font-bold text-[#b9c7e4]">© 2024 CyberCoach Sovereign Editorial. All Rights Reserved.</span>
+<div class="flex gap-6">
+<span class="material-symbols-outlined text-[#b9c7e4] hover:text-secondary cursor-pointer" data-icon="terminal">terminal</span>
+<span class="material-symbols-outlined text-[#b9c7e4] hover:text-secondary cursor-pointer" data-icon="security">security</span>
+<span class="material-symbols-outlined text-[#b9c7e4] hover:text-secondary cursor-pointer" data-icon="hub">hub</span>
+</div>
+</div>
+</footer>
+</body></html>

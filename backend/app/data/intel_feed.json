@@ -1,0 +1,29 @@
+[
+  {
+    "id": "irs-refund-kit",
+    "title": "Active Campaign",
+    "copy": "New \"IRS-Refund\" phishing kit detected in North American nodes.",
+    "accent": "secondary",
+    "category": "Campaign",
+    "source": "curated",
+    "published_at": "2026-03-24T08:00:00Z"
+  },
+  {
+    "id": "linguistic-engine-update",
+    "title": "System Update",
+    "copy": "Linguistic engine updated to version 4.12 for better emoji-spoofing detection.",
+    "accent": "outline",
+    "category": "Engine",
+    "source": "curated",
+    "published_at": "2026-03-24T07:30:00Z"
+  },
+  {
+    "id": "whatsapp-impersonation-alert",
+    "title": "High Alert",
+    "copy": "Surge in WhatsApp business account impersonation reported globally.",
+    "accent": "secondary",
+    "category": "Alert",
+    "source": "curated",
+    "published_at": "2026-03-24T06:45:00Z"
+  }
+]
