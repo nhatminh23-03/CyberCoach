@@ -6,6 +6,105 @@ export type BackendHeuristicFinding = {
   severity: "high" | "medium" | "low";
 };
 
+export type BackendModelRun = {
+  slot: "primary" | "secondary";
+  model: string;
+  risk_level: "safe" | "suspicious" | "high_risk";
+  confidence: number | null;
+  reasons: string[];
+  actions: string[];
+  explanation: string;
+};
+
+export type BackendConsensus = {
+  status: "agree" | "disagree" | "single_model" | "heuristic_fallback";
+  summary: string;
+  models_compared: number;
+  agree: boolean;
+  strategy: string;
+};
+
+export type BackendUrlEvidence = {
+  normalized_url: string;
+  domain: string;
+  registrable_domain: string;
+  subdomain: string;
+  tld: string;
+  subdomain_count: number;
+  is_raw_ip: boolean;
+  is_shortened: boolean;
+};
+
+export type BackendUrlRedirect = {
+  from_url: string;
+  to_url: string;
+  status_code: number;
+};
+
+export type BackendUrlInspection = {
+  normalized_url: string;
+  domain: string;
+  registrable_domain: string;
+  inspection_attempted: boolean;
+  inspection_succeeded: boolean;
+  blocked_reason: string | null;
+  error: string | null;
+  final_url: string | null;
+  final_domain: string | null;
+  final_registrable_domain: string | null;
+  status_code: number | null;
+  content_type: string | null;
+  redirect_chain: BackendUrlRedirect[];
+  page_title: string | null;
+  page_excerpt: string | null;
+  form_count: number;
+  password_field_count: number;
+  external_form_action: boolean;
+  meta_refresh_target: string | null;
+  login_keywords: string[];
+  truncated: boolean;
+};
+
+export type BackendEvidenceBucket = {
+  key: "structural" | "reputation" | "destination";
+  score: number;
+  finding_count: number;
+  summary: string;
+  inspected?: boolean;
+};
+
+export type BackendModelError = {
+  slot: "primary" | "secondary";
+  model: string;
+  error: string;
+};
+
+export type BackendScreenshotVisualSignal = {
+  type: string;
+  detail: string;
+  severity: "high" | "medium" | "low";
+};
+
+export type BackendOcrMetadata = {
+  media_type?: string;
+  provider_used?: string | null;
+  model?: string | null;
+  ocr_available?: boolean;
+  extracted_text?: string;
+  analysis_text?: string;
+  original_extracted_text?: string;
+  ocr_confidence?: number | null;
+  ocr_quality?: "high" | "medium" | "low" | null;
+  ocr_warnings?: string[];
+  layout_summary?: string;
+  visual_signals?: BackendScreenshotVisualSignal[];
+  qr_payloads?: string[];
+  qr_detected?: boolean;
+  ocr_override_used?: boolean;
+  ocr_override_text?: string;
+  reason?: string;
+};
+
 export type BackendScanResponse = {
   scan_type: "message" | "url" | "screenshot";
   risk_label: "Safe" | "Suspicious" | "High Risk";
@@ -26,6 +125,14 @@ export type BackendScanResponse = {
     redactions?: Array<{ type: string; original?: string }>;
     language?: string;
     history_count?: number;
+    decision_source?: string;
+    consensus?: BackendConsensus;
+    model_runs?: BackendModelRun[];
+    url_evidence?: BackendUrlEvidence[];
+    url_live_inspection?: BackendUrlInspection[];
+    evidence_buckets?: BackendEvidenceBucket[];
+    model_errors?: BackendModelError[];
+    ocr?: BackendOcrMetadata;
     [key: string]: unknown;
   };
 };
@@ -62,6 +169,28 @@ export type MessageScanResult = {
   redactedInput: string | null;
   providerUsed: string | null;
   providerLabel: string;
+  decisionSource: string;
+  consensus: BackendConsensus | null;
+  modelRuns: BackendModelRun[];
+  urlEvidence: BackendUrlEvidence[];
+  urlInspection: BackendUrlInspection[];
+  evidenceBuckets: BackendEvidenceBucket[];
+  modelErrors: BackendModelError[];
+  screenshotOcr: {
+    available: boolean;
+    extractedText: string;
+    analysisText: string;
+    originalExtractedText: string | null;
+    confidence: number | null;
+    confidenceDisplay: string;
+    quality: "high" | "medium" | "low" | null;
+    warnings: string[];
+    layoutSummary: string | null;
+    visualSignals: BackendScreenshotVisualSignal[];
+    qrPayloads: string[];
+    qrDetected: boolean;
+    overrideUsed: boolean;
+  } | null;
   locale: SupportedLocale;
   privacyModeEnabled: boolean;
   raw: BackendScanResponse;
@@ -111,7 +240,10 @@ export type BackendIntelFeedItem = {
   accent: "secondary" | "outline";
   category: string;
   source: string;
+  publisher: string;
+  reference_url: string | null;
   published_at: string;
+  last_verified_at: string;
 };
 
 export type BackendIntelFeedResponse = {
@@ -125,12 +257,16 @@ export type IntelFeedItem = {
   accent: "secondary" | "outline";
   category: string;
   source: string;
+  publisher: string;
+  referenceUrl: string | null;
   publishedAt: string;
+  lastVerifiedAt: string;
 };
 
 export type UrlPrecheckResponse = {
   normalized_url: string;
   domain: string;
+  registrable_domain: string;
   tld: string;
   subdomain_count: number;
   is_raw_ip: boolean;
@@ -143,6 +279,7 @@ export type UrlPrecheckResponse = {
 export type UrlPrecheck = {
   normalizedUrl: string;
   domain: string;
+  registrableDomain: string;
   tld: string;
   subdomainCount: number;
   isRawIp: boolean;
@@ -334,6 +471,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "IP Address URL",
       excessive_subdomains: "Excessive Subdomains",
       phishtank_match: "PhishTank Match",
+      cross_domain_redirect: "Cross-Domain Redirect",
+      multi_hop_redirect: "Multi-Hop Redirect",
+      meta_refresh_redirect: "Meta Refresh Redirect",
+      external_form_action: "External Form Action",
+      insecure_destination: "Insecure Destination",
+      login_form: "Login Form On Destination",
+      page_brand_impersonation: "Page Brand Impersonation",
+      credential_lure_page: "Credential Lure Page",
+      qr_account_lure: "QR Account Lure",
+      visual_mobile_message_ui: "Mobile Message UI",
+      visual_delivery_notice_ui: "Delivery Notice UI",
+      visual_payment_request_ui: "Payment Request UI",
+      visual_credential_prompt: "Credential Prompt UI",
+      visual_system_alert_ui: "System Alert UI",
+      visual_account_security_ui: "Account Security UI",
+      visual_urgent_cta: "Urgent Action UI",
+      visual_brand_impersonation: "Brand Impersonation UI",
       signal: "Signal"
     },
     report: {
@@ -405,6 +559,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "URL con IP",
       excessive_subdomains: "Subdominios Excesivos",
       phishtank_match: "Coincidencia con PhishTank",
+      cross_domain_redirect: "Redireccion Entre Dominios",
+      multi_hop_redirect: "Redireccion en Multiples Saltos",
+      meta_refresh_redirect: "Redireccion Meta Refresh",
+      external_form_action: "Formulario hacia Otro Dominio",
+      insecure_destination: "Destino No Seguro",
+      login_form: "Formulario de Inicio de Sesion",
+      page_brand_impersonation: "Suplantacion de Marca en la Pagina",
+      credential_lure_page: "Pagina que Busca Credenciales",
+      qr_account_lure: "Señuelo de Cuenta por QR",
+      visual_mobile_message_ui: "Interfaz de mensaje movil",
+      visual_delivery_notice_ui: "Interfaz de aviso de entrega",
+      visual_payment_request_ui: "Interfaz de solicitud de pago",
+      visual_credential_prompt: "Interfaz de solicitud de credenciales",
+      visual_system_alert_ui: "Interfaz de alerta del sistema",
+      visual_account_security_ui: "Interfaz de seguridad de cuenta",
+      visual_urgent_cta: "Interfaz de accion urgente",
+      visual_brand_impersonation: "Interfaz de suplantacion de marca",
       signal: "Senal"
     },
     report: {
@@ -476,6 +647,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "IP 地址链接",
       excessive_subdomains: "过多子域名",
       phishtank_match: "PhishTank 命中",
+      cross_domain_redirect: "跨域跳转",
+      multi_hop_redirect: "多跳跳转",
+      meta_refresh_redirect: "Meta Refresh 跳转",
+      external_form_action: "表单提交到其他域名",
+      insecure_destination: "不安全目标",
+      login_form: "目标页面含登录表单",
+      page_brand_impersonation: "页面品牌冒充",
+      credential_lure_page: "诱导凭证页面",
+      qr_account_lure: "二维码账户诱导",
+      visual_mobile_message_ui: "移动消息界面",
+      visual_delivery_notice_ui: "投递通知界面",
+      visual_payment_request_ui: "付款请求界面",
+      visual_credential_prompt: "凭据输入界面",
+      visual_system_alert_ui: "系统警报界面",
+      visual_account_security_ui: "账户安全界面",
+      visual_urgent_cta: "紧急操作界面",
+      visual_brand_impersonation: "品牌仿冒界面",
       signal: "信号"
     },
     report: {
@@ -547,6 +735,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "Lien Ket Dia Chi IP",
       excessive_subdomains: "Qua Nhieu Subdomain",
       phishtank_match: "Trung Khop PhishTank",
+      cross_domain_redirect: "Chuyen Huong Sang Ten Mien Khac",
+      multi_hop_redirect: "Nhieu Buoc Chuyen Huong",
+      meta_refresh_redirect: "Meta Refresh Redirect",
+      external_form_action: "Form Gui Sang Ten Mien Khac",
+      insecure_destination: "Dich Den Khong Bao Mat",
+      login_form: "Trang Dich Co Form Dang Nhap",
+      page_brand_impersonation: "Trang Dich Gia Mao Thuong Hieu",
+      credential_lure_page: "Trang Nhu Nhua Moi Cung Cap Thong Tin",
+      qr_account_lure: "Du Do Tai Khoan Bang QR",
+      visual_mobile_message_ui: "Giao Dien Tin Nhan Di Dong",
+      visual_delivery_notice_ui: "Giao Dien Thong Bao Giao Hang",
+      visual_payment_request_ui: "Giao Dien Yeu Cau Thanh Toan",
+      visual_credential_prompt: "Giao Dien Nhap Thong Tin Dang Nhap",
+      visual_system_alert_ui: "Giao Dien Canh Bao He Thong",
+      visual_account_security_ui: "Giao Dien Bao Mat Tai Khoan",
+      visual_urgent_cta: "Giao Dien Hanh Dong Khan",
+      visual_brand_impersonation: "Giao Dien Gia Mao Thuong Hieu",
       signal: "Tin Hieu"
     },
     report: {
@@ -618,6 +823,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "IP 주소 URL",
       excessive_subdomains: "과도한 서브도메인",
       phishtank_match: "PhishTank 일치",
+      cross_domain_redirect: "교차 도메인 리디렉션",
+      multi_hop_redirect: "다중 홉 리디렉션",
+      meta_refresh_redirect: "메타 리프레시 리디렉션",
+      external_form_action: "다른 도메인으로 전송하는 폼",
+      insecure_destination: "안전하지 않은 목적지",
+      login_form: "목적지 로그인 폼",
+      page_brand_impersonation: "페이지 브랜드 사칭",
+      credential_lure_page: "자격 증명 유도 페이지",
+      qr_account_lure: "QR 계정 유도",
+      visual_mobile_message_ui: "모바일 메시지 화면",
+      visual_delivery_notice_ui: "배송 안내 화면",
+      visual_payment_request_ui: "결제 요청 화면",
+      visual_credential_prompt: "자격 증명 입력 화면",
+      visual_system_alert_ui: "시스템 경고 화면",
+      visual_account_security_ui: "계정 보안 화면",
+      visual_urgent_cta: "긴급 행동 유도 화면",
+      visual_brand_impersonation: "브랜드 사칭 화면",
       signal: "신호"
     },
     report: {
@@ -689,6 +911,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "IP Address URL",
       excessive_subdomains: "Sobrang Daming Subdomain",
       phishtank_match: "Tugma sa PhishTank",
+      cross_domain_redirect: "Redirect papunta sa Ibang Domain",
+      multi_hop_redirect: "Maramihang Redirect",
+      meta_refresh_redirect: "Meta Refresh Redirect",
+      external_form_action: "Form na Papunta sa Ibang Domain",
+      insecure_destination: "Hindi Ligtas na Destinasyon",
+      login_form: "May Login Form ang Destinasyon",
+      page_brand_impersonation: "Panggagaya ng Brand sa Page",
+      credential_lure_page: "Page na Nang-aakit ng Kredensyal",
+      qr_account_lure: "QR na Pang-akit sa Account",
+      visual_mobile_message_ui: "UI ng Mobile Message",
+      visual_delivery_notice_ui: "UI ng Abiso sa Delivery",
+      visual_payment_request_ui: "UI ng Kahilingan sa Bayad",
+      visual_credential_prompt: "UI ng Paghingi ng Kredensyal",
+      visual_system_alert_ui: "UI ng Babala ng System",
+      visual_account_security_ui: "UI ng Seguridad ng Account",
+      visual_urgent_cta: "UI ng Agarang Aksyon",
+      visual_brand_impersonation: "UI ng Panggagaya ng Brand",
       signal: "Signal"
     },
     report: {
@@ -760,6 +999,23 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       ip_address_url: "URL d'Adresse IP",
       excessive_subdomains: "Sous-domaines Excessifs",
       phishtank_match: "Correspondance PhishTank",
+      cross_domain_redirect: "Redirection inter-domaines",
+      multi_hop_redirect: "Redirection a plusieurs sauts",
+      meta_refresh_redirect: "Redirection Meta Refresh",
+      external_form_action: "Formulaire vers un autre domaine",
+      insecure_destination: "Destination non securisee",
+      login_form: "Formulaire de connexion sur la destination",
+      page_brand_impersonation: "Imitation de marque sur la page",
+      credential_lure_page: "Page qui attire les identifiants",
+      qr_account_lure: "Leurre de compte par QR",
+      visual_mobile_message_ui: "Interface de message mobile",
+      visual_delivery_notice_ui: "Interface d'avis de livraison",
+      visual_payment_request_ui: "Interface de demande de paiement",
+      visual_credential_prompt: "Interface de demande d'identifiants",
+      visual_system_alert_ui: "Interface d'alerte systeme",
+      visual_account_security_ui: "Interface de securite du compte",
+      visual_urgent_cta: "Interface d'action urgente",
+      visual_brand_impersonation: "Interface d'usurpation de marque",
       signal: "Signal"
     },
     report: {
@@ -816,6 +1072,16 @@ function severityPoints(severity: TechnicalDetailItem["severity"]) {
   return 1;
 }
 
+function modelRiskLabel(riskLevel: BackendModelRun["risk_level"]): BackendScanResponse["risk_label"] {
+  if (riskLevel === "high_risk") {
+    return "High Risk";
+  }
+  if (riskLevel === "suspicious") {
+    return "Suspicious";
+  }
+  return "Safe";
+}
+
 function localizedFindingType(type: string, locale: SupportedLocale) {
   return SCAN_COPY[locale].findingTypes[type] ?? type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -830,9 +1096,40 @@ function buildPrivacyNote(locale: SupportedLocale, redactionCount: number, priva
   return null;
 }
 
+function ocrConfidenceDisplay(locale: SupportedLocale, confidence: number | null) {
+  if (confidence === null || Number.isNaN(confidence)) {
+    const unknownLabels: Record<SupportedLocale, string> = {
+      en: "Unknown",
+      es: "Desconocida",
+      zh: "未知",
+      vi: "Chua ro",
+      ko: "알 수 없음",
+      tl: "Hindi tiyak",
+      fr: "Inconnue"
+    };
+    return unknownLabels[locale];
+  }
+  if (confidence >= 0.8) {
+    return SCAN_COPY[locale].confidenceLabels.High;
+  }
+  if (confidence >= 0.5) {
+    return SCAN_COPY[locale].confidenceLabels.Medium;
+  }
+  return SCAN_COPY[locale].confidenceLabels.Low;
+}
+
 function pickQuickTip(findings: BackendHeuristicFinding[], locale: SupportedLocale) {
   const types = findings.map((finding) => finding.type);
   const tips = SCAN_COPY[locale].tips;
+  if (
+    types.includes("official_entity_impersonation") ||
+    types.includes("subdomain_impersonation") ||
+    types.includes("legal_threat") ||
+    types.includes("page_brand_impersonation") ||
+    types.includes("cross_domain_redirect")
+  ) {
+    return tips.direct;
+  }
   if (types.includes("urgency")) {
     return tips.urgency;
   }
@@ -859,6 +1156,54 @@ function providerDisplay(provider: string | null, locale: SupportedLocale) {
     return labels.heuristic;
   }
   return provider === "openrouter" ? labels.openrouter : labels.anthropic;
+}
+
+function primaryFinding(findings: BackendHeuristicFinding[]) {
+  if (findings.length === 0) {
+    return null;
+  }
+
+  const priority: Record<string, number> = {
+    phishtank_match: 100,
+    official_entity_impersonation: 95,
+    page_brand_impersonation: 94,
+    subdomain_impersonation: 90,
+    homoglyph: 88,
+    domain_mismatch: 85,
+    cross_domain_redirect: 84,
+    external_form_action: 83,
+    login_form: 82,
+    legal_threat: 80,
+    qr_account_lure: 79,
+    credential_ask: 75,
+    meta_refresh_redirect: 73,
+    suspicious_tld: 70,
+    insecure_destination: 69,
+    multi_hop_redirect: 68,
+    credential_lure_page: 67,
+    urgency: 65,
+    deadline_conflict: 60,
+    visual_brand_impersonation: 58,
+    visual_credential_prompt: 57,
+    visual_payment_request_ui: 56,
+    visual_account_security_ui: 55,
+    visual_delivery_notice_ui: 54,
+    visual_system_alert_ui: 53,
+    visual_urgent_cta: 52,
+    visual_mobile_message_ui: 51
+  };
+
+  return findings.reduce((best, current) => {
+    const bestScore = priority[best.type] ?? 0;
+    const currentScore = priority[current.type] ?? 0;
+    if (currentScore > bestScore) {
+      return current;
+    }
+    if (currentScore === bestScore && severityPoints(current.severity) > severityPoints(best.severity)) {
+      return current;
+    }
+    return best;
+  });
 }
 
 export function adaptMessageScanResult(
@@ -899,9 +1244,48 @@ export function adaptMessageScanResult(
   const redactionCount = payload.metadata?.redaction_count ?? 0;
   const riskLabelDisplay = SCAN_COPY[locale].riskLabels[payload.risk_label];
   const confidenceDisplay = SCAN_COPY[locale].confidenceLabels[payload.confidence];
-  const likelyScamPattern = heuristicFindings[0]
-    ? localizedFindingType(heuristicFindings[0].type, locale)
-    : riskLabelDisplay;
+  const bestFinding = primaryFinding(heuristicFindings);
+  const likelyScamPattern = bestFinding ? localizedFindingType(bestFinding.type, locale) : riskLabelDisplay;
+  const modelRuns = payload.metadata?.model_runs ?? [];
+  const urlEvidence = payload.metadata?.url_evidence ?? [];
+  const urlInspection = payload.metadata?.url_live_inspection ?? [];
+  const evidenceBuckets = payload.metadata?.evidence_buckets ?? [];
+  const ocr = payload.metadata?.ocr;
+  const screenshotOcr =
+    payload.scan_type === "screenshot"
+      ? {
+          available: Boolean(ocr?.ocr_available),
+          extractedText: String(ocr?.extracted_text ?? ""),
+          analysisText: String(ocr?.analysis_text ?? ocr?.extracted_text ?? ""),
+          originalExtractedText: ocr?.original_extracted_text ? String(ocr.original_extracted_text) : null,
+          confidence: typeof ocr?.ocr_confidence === "number" ? ocr.ocr_confidence : null,
+          confidenceDisplay: ocrConfidenceDisplay(
+            locale,
+            typeof ocr?.ocr_confidence === "number" ? ocr.ocr_confidence : null
+          ),
+          quality:
+            ocr?.ocr_quality === "high" || ocr?.ocr_quality === "medium" || ocr?.ocr_quality === "low"
+              ? ocr.ocr_quality
+              : null,
+          warnings: Array.isArray(ocr?.ocr_warnings) ? ocr.ocr_warnings.map((item) => String(item)) : [],
+          layoutSummary: ocr?.layout_summary ? String(ocr.layout_summary) : null,
+          visualSignals: Array.isArray(ocr?.visual_signals)
+            ? ocr.visual_signals.filter(
+                (item): item is BackendScreenshotVisualSignal =>
+                  Boolean(
+                    item &&
+                      typeof item === "object" &&
+                      typeof item.type === "string" &&
+                      typeof item.detail === "string" &&
+                      typeof item.severity === "string"
+                  )
+              )
+            : [],
+          qrPayloads: Array.isArray(ocr?.qr_payloads) ? ocr.qr_payloads.map((item) => String(item)) : [],
+          qrDetected: Boolean(ocr?.qr_detected),
+          overrideUsed: Boolean(ocr?.ocr_override_used)
+        }
+      : null;
 
   return {
     riskLabel: payload.risk_label,
@@ -922,6 +1306,18 @@ export function adaptMessageScanResult(
     redactedInput: payload.redacted_input,
     providerUsed: payload.provider_used,
     providerLabel: providerDisplay(payload.provider_used, locale),
+    decisionSource: payload.metadata?.decision_source ?? "heuristic_fallback",
+    consensus: payload.metadata?.consensus ?? null,
+    modelRuns: modelRuns.map((run) => ({
+      ...run,
+      reasons: run.reasons ?? [],
+      actions: run.actions ?? []
+    })),
+    urlEvidence,
+    urlInspection,
+    evidenceBuckets,
+    modelErrors: payload.metadata?.model_errors ?? [],
+    screenshotOcr,
     locale,
     privacyModeEnabled: options.privacyMode,
     raw: payload
@@ -1002,11 +1398,19 @@ export async function executeScreenshotScan(input: {
   file: File;
   language: string;
   privacyMode: boolean;
+  qrPayloads?: string[];
+  ocrOverrideText?: string;
 }) {
   const formData = new FormData();
   formData.append("image", input.file, input.file.name);
   formData.append("language", input.language);
   formData.append("privacy_mode", String(input.privacyMode));
+  if (input.qrPayloads?.length) {
+    formData.append("qr_payloads", JSON.stringify(input.qrPayloads));
+  }
+  if (input.ocrOverrideText?.trim()) {
+    formData.append("ocr_override_text", input.ocrOverrideText.trim());
+  }
 
   const response = await fetch(`${API_BASE_URL}/scan/screenshot`, {
     method: "POST",
@@ -1037,6 +1441,7 @@ export function buildPlainTextReport(result: MessageScanResult) {
     `=== ${reportCopy.title} ===`,
     `${reportCopy.riskLevel}: ${result.riskLabelDisplay}`,
     `${reportCopy.confidence}: ${result.confidenceDisplay}`,
+    `Decision Source: ${result.decisionSource}`,
     `${reportCopy.likelyPattern}: ${result.likelyScamPattern}`,
     "",
     `${reportCopy.summary}: ${result.summary}`,
@@ -1053,6 +1458,102 @@ export function buildPlainTextReport(result: MessageScanResult) {
   result.recommendedActions.forEach((action, index) => {
     lines.push(`  ${index + 1}. ${action}`);
   });
+
+  if (result.consensus?.summary) {
+    lines.push("", `Consensus: ${result.consensus.summary}`);
+  }
+
+  if (result.evidenceBuckets.length > 0) {
+    lines.push("", "Evidence Buckets:");
+    result.evidenceBuckets.forEach((bucket) => {
+      lines.push(`  - ${bucket.key}: score ${bucket.score}, findings ${bucket.finding_count}`);
+      lines.push(`    ${bucket.summary}`);
+    });
+  }
+
+  if (result.screenshotOcr) {
+    lines.push("", "Screenshot OCR:");
+    lines.push(`  - Confidence: ${result.screenshotOcr.confidenceDisplay}`);
+    if (result.screenshotOcr.overrideUsed) {
+      lines.push("  - Manual text override: yes");
+    }
+    if (result.screenshotOcr.layoutSummary) {
+      lines.push(`  - Layout: ${result.screenshotOcr.layoutSummary}`);
+    }
+    if (result.screenshotOcr.warnings.length > 0) {
+      lines.push("  - OCR warnings:");
+      result.screenshotOcr.warnings.forEach((warning) => {
+        lines.push(`    * ${warning}`);
+      });
+    }
+    if (result.screenshotOcr.visualSignals.length > 0) {
+      lines.push("  - Visual signals:");
+      result.screenshotOcr.visualSignals.forEach((signal) => {
+        lines.push(`    * [${signal.severity}] ${signal.detail}`);
+      });
+    }
+    if (result.screenshotOcr.qrPayloads.length > 0) {
+      lines.push("", "Detected QR Codes:");
+      result.screenshotOcr.qrPayloads.forEach((payload, index) => {
+        lines.push(`  ${index + 1}. ${payload}`);
+      });
+    }
+  }
+
+  if (result.modelRuns.length > 0) {
+    lines.push("", "Model Assessments:");
+    result.modelRuns.forEach((run, index) => {
+      lines.push(
+        `  ${index + 1}. ${run.model} -> ${SCAN_COPY[result.locale].riskLabels[modelRiskLabel(run.risk_level)]}${
+          typeof run.confidence === "number" ? ` (${Math.round(run.confidence * 100)}%)` : ""
+        }`
+      );
+      if (run.explanation) {
+        lines.push(`     ${run.explanation}`);
+      }
+    });
+  }
+
+  if (result.technicalDetails.length > 0) {
+    lines.push("", "Technical Details:");
+    result.technicalDetails.forEach((detail, index) => {
+      lines.push(`  ${index + 1}. [${detail.severity}] ${detail.label}: ${detail.detail}`);
+    });
+  }
+
+  if (result.urlInspection.length > 0) {
+    lines.push("", "Destination Inspection:");
+    result.urlInspection.forEach((inspection, index) => {
+      lines.push(`  ${index + 1}. ${inspection.normalized_url}`);
+      if (inspection.blocked_reason) {
+        lines.push(`     blocked: ${inspection.blocked_reason}`);
+        return;
+      }
+      if (inspection.error && !inspection.inspection_succeeded) {
+        lines.push(`     error: ${inspection.error}`);
+        return;
+      }
+      lines.push(`     final: ${inspection.final_url ?? inspection.normalized_url}`);
+      lines.push(`     redirects: ${inspection.redirect_chain.length}`);
+      if (typeof inspection.status_code === "number") {
+        lines.push(`     status: ${inspection.status_code}`);
+      }
+      if (inspection.page_title) {
+        lines.push(`     title: ${inspection.page_title}`);
+      }
+    });
+  }
+
+  if (result.urlEvidence.length > 0) {
+    lines.push("", "URL Evidence:");
+    result.urlEvidence.forEach((item, index) => {
+      lines.push(`  ${index + 1}. ${item.domain} -> registered as ${item.registrable_domain}`);
+    });
+  }
+
+  if (result.quickTip) {
+    lines.push("", `Quick Tip: ${result.quickTip}`);
+  }
 
   if (result.privacyNote) {
     lines.push("", `[${reportCopy.privacyMode}: ${result.privacyNote}]`);
@@ -1136,7 +1637,10 @@ export async function fetchIntelFeed() {
     accent: item.accent,
     category: item.category,
     source: item.source,
-    publishedAt: item.published_at
+    publisher: item.publisher,
+    referenceUrl: item.reference_url,
+    publishedAt: item.published_at,
+    lastVerifiedAt: item.last_verified_at
   }));
 }
 
@@ -1160,6 +1664,7 @@ export async function fetchUrlPrecheck(url: string) {
   return {
     normalizedUrl: payload.normalized_url,
     domain: payload.domain,
+    registrableDomain: payload.registrable_domain,
     tld: payload.tld,
     subdomainCount: payload.subdomain_count,
     isRawIp: payload.is_raw_ip,

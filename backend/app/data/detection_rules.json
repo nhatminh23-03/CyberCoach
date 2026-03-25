@@ -1,0 +1,296 @@
+{
+  "urgency_phrases": [
+    "act now",
+    "immediate action",
+    "urgent",
+    "expires today",
+    "limited time",
+    "account will be closed",
+    "suspended",
+    "verify your account",
+    "confirm your identity",
+    "unauthorized access",
+    "unusual activity",
+    "click here immediately",
+    "within 24 hours",
+    "within 48 hours",
+    "your account has been",
+    "failure to respond",
+    "final warning",
+    "last chance",
+    "don't miss out",
+    "act immediately",
+    "time sensitive",
+    "expire soon",
+    "resolve promptly",
+    "outstanding balance",
+    "additional fees",
+    "record updates",
+    "registration restrictions",
+    "driving privilege",
+    "traffic citation",
+    "citation notice",
+    "driving record",
+    "enforcement begins",
+    "avoid suspension"
+  ],
+  "credential_phrases": [
+    "password",
+    "login",
+    "sign in",
+    "verify your",
+    "confirm your",
+    "update your payment",
+    "billing information",
+    "social security",
+    "credit card",
+    "bank account",
+    "ssn",
+    "routing number",
+    "pin number",
+    "security question",
+    "one-time code",
+    "otp",
+    "verification code"
+  ],
+  "suspicious_tlds": [
+    ".xyz",
+    ".top",
+    ".buzz",
+    ".click",
+    ".link",
+    ".info",
+    ".tk",
+    ".ml",
+    ".ga",
+    ".cf",
+    ".gq",
+    ".work",
+    ".support",
+    ".review",
+    ".zip",
+    ".mov",
+    ".bond"
+  ],
+  "trusted_domains": [
+    "google.com",
+    "microsoft.com",
+    "apple.com",
+    "amazon.com",
+    "paypal.com",
+    "chase.com",
+    "bankofamerica.com",
+    "wellsfargo.com",
+    "netflix.com",
+    "facebook.com",
+    "instagram.com",
+    "twitter.com",
+    "linkedin.com",
+    "github.com",
+    "dropbox.com",
+    "adobe.com",
+    "spotify.com",
+    "usps.com",
+    "ups.com",
+    "fedex.com",
+    "dhl.com",
+    "irs.gov",
+    "ca.gov",
+    "california.gov",
+    "dmv.ca.gov",
+    "lacity.gov",
+    "lacity.org"
+  ],
+  "shortened_url_domains": [
+    "bit.ly",
+    "tinyurl.com",
+    "t.co",
+    "goo.gl",
+    "ow.ly",
+    "is.gd",
+    "buff.ly",
+    "adf.ly",
+    "bl.ink",
+    "lnkd.in",
+    "rb.gy",
+    "shorturl.at",
+    "tiny.cc",
+    "v.gd",
+    "qr.ae",
+    "cutt.ly"
+  ],
+  "official_entities": [
+    {
+      "name": "Microsoft",
+      "keywords": [
+        "microsoft",
+        "microsoft 365",
+        "office 365",
+        "outlook",
+        "teams",
+        "multi-factor authentication",
+        "mfa",
+        "2fa",
+        "re-authenticate"
+      ],
+      "official_domains": [
+        "microsoft.com",
+        "microsoftonline.com",
+        "office.com",
+        "office365.com",
+        "outlook.com",
+        "live.com",
+        "sharepoint.com",
+        "onedrive.com"
+      ]
+    },
+    {
+      "name": "California DMV",
+      "keywords": [
+        "dmv",
+        "department of motor vehicles",
+        "california vehicle code",
+        "driving record",
+        "traffic citation",
+        "registration restrictions",
+        "driving privilege"
+      ],
+      "official_domains": [
+        "dmv.ca.gov",
+        "ca.gov",
+        "california.gov"
+      ]
+    },
+    {
+      "name": "City of Los Angeles",
+      "keywords": [
+        "lacity",
+        "city of los angeles",
+        "los angeles"
+      ],
+      "official_domains": [
+        "lacity.gov",
+        "lacity.org"
+      ]
+    },
+    {
+      "name": "IRS",
+      "keywords": [
+        "irs",
+        "internal revenue service"
+      ],
+      "official_domains": [
+        "irs.gov"
+      ]
+    },
+    {
+      "name": "USPS",
+      "keywords": [
+        "usps",
+        "postal service",
+        "united states postal service"
+      ],
+      "official_domains": [
+        "usps.com"
+      ]
+    }
+  ],
+  "legal_threat_phrases": [
+    "traffic citation",
+    "california vehicle code",
+    "driving record",
+    "registration restrictions",
+    "driving privilege",
+    "record updates",
+    "civil penalty",
+    "court notice",
+    "fine notice"
+  ],
+  "qr_account_lure_phrases": [
+    "scan the qr code",
+    "scan the microsoft qr code",
+    "multi-factor authentication",
+    "mfa",
+    "2fa",
+    "re-authenticate",
+    "verify and review",
+    "password security"
+  ],
+  "common_multi_part_suffixes": [
+    "co.uk",
+    "gov.uk",
+    "com.au",
+    "gov.au"
+  ],
+  "screenshot_visual_signal_types": [
+    "mobile_message_ui",
+    "delivery_notice_ui",
+    "payment_request_ui",
+    "credential_prompt_ui",
+    "system_alert_ui",
+    "account_security_ui",
+    "urgent_cta_ui",
+    "brand_impersonation_ui",
+    "qr_code_visible"
+  ],
+  "screenshot_visual_finding_types": {
+    "mobile_message_ui": "visual_mobile_message_ui",
+    "delivery_notice_ui": "visual_delivery_notice_ui",
+    "payment_request_ui": "visual_payment_request_ui",
+    "credential_prompt_ui": "visual_credential_prompt",
+    "system_alert_ui": "visual_system_alert_ui",
+    "account_security_ui": "visual_account_security_ui",
+    "urgent_cta_ui": "visual_urgent_cta",
+    "brand_impersonation_ui": "visual_brand_impersonation"
+  },
+  "login_keywords": [
+    "login",
+    "log in",
+    "sign in",
+    "verify",
+    "password",
+    "account",
+    "billing",
+    "payment"
+  ],
+  "pii_name_exclusion_words": [
+    "account",
+    "admin",
+    "administrator",
+    "billing",
+    "bank",
+    "care",
+    "center",
+    "customer",
+    "department",
+    "desk",
+    "help",
+    "manager",
+    "office",
+    "payment",
+    "security",
+    "service",
+    "services",
+    "support",
+    "system",
+    "team",
+    "verification"
+  ],
+  "message_samples": {
+    "phishing_email": {
+      "id": "phishing_email",
+      "label": "Phishing email",
+      "text": "From: Apple Support <security-alert@app1e-verify.xyz>\nSubject: Your Apple ID has been suspended\n\nDear Customer,\n\nWe detected unusual activity on your Apple ID. Your account has been temporarily suspended.\n\nTo restore access, please verify your identity within 24 hours or your account will be permanently deleted.\n\nClick here to verify: https://app1e-secure-login.xyz/verify?id=8372\n\nIf you do not take immediate action, you will lose access to all purchases and iCloud data.\n\nApple Support Team"
+    },
+    "legit_newsletter": {
+      "id": "legit_newsletter",
+      "label": "Legit newsletter",
+      "text": "From: GitHub <noreply@github.com>\nSubject: [GitHub] Your monthly developer digest\n\nHey there!\n\nHere's what happened in your repositories this month:\n- 23 commits pushed to main branches\n- 5 pull requests merged\n- 2 new stars on your projects\n\nCheck out what's trending in open source this week on our Explore page.\n\nHappy coding!\nThe GitHub Team\n\nUnsubscribe: https://github.com/settings/notifications"
+    },
+    "sms_scam": {
+      "id": "sms_scam",
+      "label": "SMS scam",
+      "text": "USPS: Your package #US9514901185421 has a delivery problem. Update your address now to avoid return to sender: https://usps-redelivery.top/track?ref=9514901185421\n\nReply STOP to unsubscribe"
+    }
+  }
+}

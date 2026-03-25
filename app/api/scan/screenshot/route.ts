@@ -11,12 +11,20 @@ export async function POST(request: Request) {
 
   const language = incoming.get("language");
   const privacyMode = incoming.get("privacy_mode");
+  const qrPayloads = incoming.get("qr_payloads");
+  const ocrOverrideText = incoming.get("ocr_override_text");
 
   if (typeof language === "string") {
     proxied.append("language", language);
   }
   if (typeof privacyMode === "string") {
     proxied.append("privacy_mode", privacyMode);
+  }
+  if (typeof qrPayloads === "string") {
+    proxied.append("qr_payloads", qrPayloads);
+  }
+  if (typeof ocrOverrideText === "string") {
+    proxied.append("ocr_override_text", ocrOverrideText);
   }
 
   const response = await proxyToBackend("/scan/screenshot", {

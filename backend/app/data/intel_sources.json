@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cisa-alerts",
+    "url": "https://www.cisa.gov/cybersecurity-advisories/alerts.xml",
+    "publisher": "CISA",
+    "category": "Official Advisory",
+    "title_prefix": "CISA Alert",
+    "source": "official",
+    "accent": "secondary"
+  },
+  {
+    "id": "ftc-consumer-blog",
+    "url": "https://consumer.ftc.gov/blog/gd-rss.xml",
+    "publisher": "FTC Consumer Advice",
+    "category": "Consumer Scam Alert",
+    "title_prefix": "FTC Consumer Alert",
+    "source": "official",
+    "accent": "outline"
+  }
+]

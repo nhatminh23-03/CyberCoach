@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import re
 
+from .service_data import detection_rule_set
 
-NAME_EXCLUSION_WORDS = {
-    "account", "admin", "administrator", "billing", "bank", "care", "center",
-    "customer", "department", "desk", "help", "manager", "office", "payment",
-    "security", "service", "services", "support", "system", "team", "verification",
-}
+
+NAME_EXCLUSION_WORDS = detection_rule_set("pii_name_exclusion_words")
 
 
 def is_likely_person_name(candidate: str) -> bool:

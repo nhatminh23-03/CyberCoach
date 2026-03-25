@@ -6,7 +6,10 @@
     "accent": "secondary",
     "category": "Campaign",
     "source": "curated",
-    "published_at": "2026-03-24T08:00:00Z"
+    "publisher": "CISA Advisory Digest",
+    "reference_url": "https://www.cisa.gov/news-events/cybersecurity-advisories",
+    "published_at": "2026-03-24T08:00:00Z",
+    "last_verified_at": "2026-03-24T08:15:00Z"
   },
   {
     "id": "linguistic-engine-update",
@@ -15,7 +18,10 @@
     "accent": "outline",
     "category": "Engine",
     "source": "curated",
-    "published_at": "2026-03-24T07:30:00Z"
+    "publisher": "CyberCoach Detection Engine",
+    "reference_url": null,
+    "published_at": "2026-03-24T07:30:00Z",
+    "last_verified_at": "2026-03-24T07:30:00Z"
   },
   {
     "id": "whatsapp-impersonation-alert",
@@ -24,6 +30,9 @@
     "accent": "secondary",
     "category": "Alert",
     "source": "curated",
-    "published_at": "2026-03-24T06:45:00Z"
+    "publisher": "APWG Trend Watch",
+    "reference_url": "https://apwg.org/trendsreports/",
+    "published_at": "2026-03-24T06:45:00Z",
+    "last_verified_at": "2026-03-24T07:00:00Z"
   }
 ]

@@ -41,7 +41,10 @@ class IntelItemResponse(BaseModel):
     accent: Literal["secondary", "outline"] = "outline"
     category: str = "Intel"
     source: str = "curated"
+    publisher: str = "CyberCoach"
+    reference_url: Optional[str] = None
     published_at: str = ""
+    last_verified_at: str = ""
 
 
 class IntelFeedResponse(BaseModel):
@@ -55,6 +58,7 @@ class UrlPrecheckResponse(BaseModel):
 
     normalized_url: str
     domain: str
+    registrable_domain: str
     tld: str
     subdomain_count: int = Field(default=0, ge=0)
     is_raw_ip: bool = False

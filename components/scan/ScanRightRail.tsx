@@ -55,8 +55,75 @@ function scanTypeLabel(scanType: string) {
   return "Analysis";
 }
 
+function intelSourceLabel(source: string) {
+  if (source === "session") {
+    return "Session telemetry";
+  }
+  if (source === "official") {
+    return "Official public feed";
+  }
+  if (source === "curated") {
+    return "Curated local feed";
+  }
+  return "Internal source";
+}
+
+function intelSectionTitle(source: string) {
+  if (source === "session") {
+    return "Live Session";
+  }
+  if (source === "official") {
+    return "Official Sources";
+  }
+  if (source === "curated") {
+    return "Curated Advisories";
+  }
+  return "Other Signals";
+}
+
+function intelAccentClasses(accent: IntelFeedItem["accent"]) {
+  if (accent === "secondary") {
+    return {
+      rail: "bg-secondary",
+      badge: "border-secondary/30 bg-secondary/10 text-secondary"
+    };
+  }
+
+  return {
+    rail: "bg-outline-variant",
+    badge: "border-outline-variant/30 bg-surface-container-lowest/60 text-on-primary-container"
+  };
+}
+
+function groupIntelFeed(items: IntelFeedItem[]) {
+  return {
+    session: items.filter((item) => item.source === "session"),
+    official: items.filter((item) => item.source === "official"),
+    curated: items.filter((item) => item.source === "curated"),
+    other: items.filter((item) => item.source !== "session" && item.source !== "official" && item.source !== "curated")
+  };
+}
+
+function referenceDomain(referenceUrl: string | null) {
+  if (!referenceUrl) {
+    return null;
+  }
+  try {
+    return new URL(referenceUrl).hostname;
+  } catch {
+    return null;
+  }
+}
+
 export function ScanRightRail({ historyItems, intelFeedItems, locale }: ScanRightRailProps) {
   const recentItems = historyItems.slice(0, 3);
+  const groupedFeed = groupIntelFeed(intelFeedItems);
+  const feedSections = [
+    { key: "session", label: intelSectionTitle("session"), items: groupedFeed.session },
+    { key: "official", label: intelSectionTitle("official"), items: groupedFeed.official },
+    { key: "curated", label: intelSectionTitle("curated"), items: groupedFeed.curated },
+    { key: "other", label: intelSectionTitle("other"), items: groupedFeed.other }
+  ].filter((section) => section.items.length > 0);
 
   return (
     <aside className="space-y-12">
@@ -115,37 +182,95 @@ export function ScanRightRail({ historyItems, intelFeedItems, locale }: ScanRigh
         </div>
 
         <div className="space-y-2">
-          <h2 className="font-headline text-lg font-bold uppercase tracking-tight text-secondary">Global Intel Feed</h2>
+          <h2 className="font-headline text-lg font-bold uppercase tracking-tight text-secondary">Threat Intel Feed</h2>
           <p className="font-label text-[10px] font-bold uppercase tracking-widest text-on-primary-container">
-            Real-time Node Monitoring
+            Curated Advisories + Live Session Telemetry
+          </p>
+        </div>
+
+        <div className="border border-outline-variant/20 bg-surface-container-lowest/45 p-4">
+          <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Feed Context</p>
+          <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+            This panel blends official public advisories, local curated notes, and signals from your current backend session. Source labels, verification times, and references are shown when available.
           </p>
         </div>
 
         <div className="space-y-6">
-          {intelFeedItems.length > 0 ? (
-            intelFeedItems.map((item) => (
-              <div key={item.id} className="flex gap-4">
-                <div className={`h-12 w-1 ${item.accent === "secondary" ? "bg-secondary" : "bg-outline-variant"}`} />
-                <div>
-                  <span className="font-label text-[10px] font-bold uppercase text-on-primary-container">{item.title}</span>
-                  <p className="mt-1 text-sm font-medium leading-tight text-on-surface">{item.copy}</p>
+          {feedSections.length > 0 ? (
+            feedSections.map((section) => (
+              <div key={section.key} className="space-y-4">
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{section.label}</p>
+                  <span className="font-label text-[9px] uppercase tracking-[0.14em] text-outline">
+                    {section.items.length} item{section.items.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {section.items.map((item) => {
+                    const accent = intelAccentClasses(item.accent);
+                    const domain = referenceDomain(item.referenceUrl);
+                    return (
+                      <div key={item.id} className="flex gap-4">
+                        <div className={`w-1 shrink-0 self-stretch ${accent.rail}`} />
+                        <div className="min-w-0 flex-1 space-y-3 border border-outline-variant/20 bg-surface-container-lowest/45 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-on-primary-container">{item.title}</span>
+                              <p className="font-label text-[10px] uppercase tracking-[0.14em] text-outline">
+                                {item.category} • {relativeTimeLabel(item.publishedAt, locale)}
+                              </p>
+                            </div>
+                            <span className={`border px-3 py-2 font-label text-[9px] font-bold uppercase tracking-[0.16em] ${accent.badge}`}>
+                              {intelSourceLabel(item.source)}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium leading-relaxed text-on-surface break-words [overflow-wrap:anywhere]">{item.copy}</p>
+                          <div className="space-y-2 border-t border-outline-variant/15 pt-3">
+                            <p className="font-label text-[10px] uppercase tracking-[0.14em] text-outline">
+                              Publisher: {item.publisher}
+                            </p>
+                            {domain ? (
+                              <p className="font-label text-[10px] uppercase tracking-[0.14em] text-outline">
+                                Source domain: {domain}
+                              </p>
+                            ) : null}
+                            <p className="font-label text-[10px] uppercase tracking-[0.14em] text-outline">
+                              Last verified: {relativeTimeLabel(item.lastVerifiedAt, locale)}
+                            </p>
+                            {item.referenceUrl ? (
+                              <a
+                                href={item.referenceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex text-xs font-semibold text-secondary transition-colors hover:text-vellum"
+                              >
+                                Reference source
+                              </a>
+                            ) : (
+                              <p className="font-label text-[10px] uppercase tracking-[0.14em] text-outline">No external reference</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))
           ) : (
             <div className="flex gap-4">
               <div className="h-12 w-1 bg-outline-variant" />
-              <div>
+              <div className="border border-outline-variant/20 bg-surface-container-lowest/45 p-4">
                 <span className="font-label text-[10px] font-bold uppercase text-on-primary-container">Intel Offline</span>
-                <p className="mt-1 text-sm font-medium leading-tight text-on-surface">
-                  The global feed is temporarily unavailable. Curated and live telemetry entries will appear here when the backend is reachable.
+                <p className="mt-2 text-sm font-medium leading-relaxed text-on-surface">
+                  The intel feed is temporarily unavailable. Curated local entries and session telemetry will appear here when the backend responds.
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        <button className="editorial-button w-full py-3 text-[10px]">Full Threat Report</button>
+        <button className="editorial-button w-full py-3 text-[10px]">View Full Feed Context</button>
       </section>
     </aside>
   );

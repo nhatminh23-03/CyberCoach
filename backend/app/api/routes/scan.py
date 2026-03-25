@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
 from ...models.requests import MessageScanRequest, UrlScanRequest
@@ -78,6 +80,8 @@ async def scan_screenshot(
     image: UploadFile = File(...),
     language: str = Form("en"),
     privacy_mode: bool = Form(True),
+    qr_payloads: str = Form("[]"),
+    ocr_override_text: str = Form(""),
 ) -> ScanResponse:
     """Analyze an uploaded screenshot by extracting visible text first."""
     try:
@@ -85,7 +89,18 @@ async def scan_screenshot(
         if not image_bytes:
             raise ValueError("Uploaded image is empty.")
         media_type = image.content_type or "image/png"
-        return analyze_screenshot(image_bytes, media_type=media_type, language=language, privacy_mode=privacy_mode)
+        parsed_qr_payloads = json.loads(qr_payloads) if qr_payloads else []
+        if not isinstance(parsed_qr_payloads, list):
+            raise ValueError("QR payloads must be a JSON array.")
+        cleaned_qr_payloads = [str(item).strip() for item in parsed_qr_payloads if str(item).strip()]
+        return analyze_screenshot(
+            image_bytes,
+            media_type=media_type,
+            language=language,
+            privacy_mode=privacy_mode,
+            qr_payloads=cleaned_qr_payloads,
+            ocr_override_text=ocr_override_text,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:

@@ -24,6 +24,16 @@ import {
 
 const STORAGE_KEY = "cybercoach:screenshot-language";
 
+type DetectedBarcode = {
+  rawValue?: string;
+};
+
+type BarcodeDetectorInstance = {
+  detect: (source: ImageBitmapSource) => Promise<DetectedBarcode[]>;
+};
+
+type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => BarcodeDetectorInstance;
+
 const languageOptions = [
   { value: "en", label: "English" },
   { value: "es", label: "Spanish" },
@@ -63,12 +73,74 @@ function bytesLabel(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+async function detectQrPayloads(file: File): Promise<string[]> {
+  if (typeof window === "undefined" || typeof createImageBitmap !== "function") {
+    return [];
+  }
+
+  const detectorClass = (window as Window & typeof globalThis & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
+  if (!detectorClass) {
+    return detectQrPayloadsWithJsqr(file);
+  }
+
+  let imageBitmap: ImageBitmap | null = null;
+  try {
+    imageBitmap = await createImageBitmap(file);
+    const detector = new detectorClass({ formats: ["qr_code"] });
+    const results = await detector.detect(imageBitmap);
+    const decoded = results
+      .map((entry) => entry.rawValue?.trim() ?? "")
+      .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
+    if (decoded.length > 0) {
+      return decoded;
+    }
+    return detectQrPayloadsWithJsqr(file);
+  } catch {
+    return detectQrPayloadsWithJsqr(file);
+  } finally {
+    imageBitmap?.close();
+  }
+}
+
+async function detectQrPayloadsWithJsqr(file: File): Promise<string[]> {
+  if (typeof document === "undefined" || typeof createImageBitmap !== "function") {
+    return [];
+  }
+
+  let imageBitmap: ImageBitmap | null = null;
+  try {
+    imageBitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = imageBitmap.width;
+    canvas.height = imageBitmap.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) {
+      return [];
+    }
+
+    context.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const { default: jsQR } = await import("jsqr");
+    const decoded = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "attemptBoth"
+    });
+    return decoded?.data ? [decoded.data.trim()].filter(Boolean) : [];
+  } catch {
+    return [];
+  } finally {
+    imageBitmap?.close();
+  }
+}
+
 export function ScreenshotScanPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [language, setLanguage] = useState<SupportedLocale>("en");
   const [privacyMode, setPrivacyMode] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [rescanBusy, setRescanBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [result, setResult] = useState<MessageScanResult | null>(null);
   const [historyItems, setHistoryItems] = useState<DetailedScanHistoryItem[]>([]);
@@ -78,6 +150,7 @@ export function ScreenshotScanPage() {
   const [reportBusy, setReportBusy] = useState<"copy" | "txt" | "md" | null>(null);
   const browseInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -105,6 +178,29 @@ export function ScreenshotScanPage() {
     setPreviewUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
+
+  useEffect(() => {
+    if (!cameraOpen || !cameraStream || !cameraVideoRef.current) {
+      return;
+    }
+
+    cameraVideoRef.current.srcObject = cameraStream;
+    void cameraVideoRef.current.play().catch(() => {
+      // The user can still manually start playback if the browser blocks autoplay.
+    });
+
+    return () => {
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = null;
+      }
+    };
+  }, [cameraOpen, cameraStream]);
+
+  useEffect(() => {
+    return () => {
+      cameraStream?.getTracks().forEach((track) => track.stop());
+    };
+  }, [cameraStream]);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +258,74 @@ export function ScreenshotScanPage() {
     );
   }
 
+  function stopCameraStream() {
+    cameraStream?.getTracks().forEach((track) => track.stop());
+    setCameraStream(null);
+    setCameraOpen(false);
+    if (cameraVideoRef.current) {
+      cameraVideoRef.current.srcObject = null;
+    }
+  }
+
+  async function handleOpenCamera() {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    try {
+      setError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+      stopCameraStream();
+      setCameraStream(stream);
+      setCameraOpen(true);
+      setStatusMessage("Camera ready. Frame the suspicious screen and capture once the text is sharp.");
+    } catch (cameraError) {
+      const reason =
+        cameraError instanceof DOMException && cameraError.name === "NotAllowedError"
+          ? "Camera permission was denied. Allow browser camera access or use Browse Files instead."
+          : cameraError instanceof DOMException && cameraError.name === "NotFoundError"
+            ? "No camera was found on this device. Use Browse Files instead."
+            : "Unable to access the browser camera. Use Browse Files instead.";
+      setError(reason);
+      setCameraOpen(false);
+      setCameraStream(null);
+    }
+  }
+
+  async function handleCapturePhoto() {
+    const video = cameraVideoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setError("The camera is still warming up. Wait a moment and try the capture again.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setError("Unable to capture the current camera frame.");
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) {
+      setError("Unable to convert the captured frame into an image.");
+      return;
+    }
+
+    const file = new File([blob], `camera-capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+    stopCameraStream();
+    acceptFile(file, "camera");
+  }
+
   async function handleAnalyze() {
     if (!selectedFile) {
       setError("Upload a screenshot or take a photo before running analysis.");
@@ -178,10 +342,12 @@ export function ScreenshotScanPage() {
     setStatusMessage("Extracting visible text, checking scam patterns, and preparing guidance...");
 
     try {
+      const qrPayloads = await detectQrPayloads(selectedFile);
       const payload = await executeScreenshotScan({
         file: selectedFile,
         language,
-        privacyMode
+        privacyMode,
+        qrPayloads,
       });
 
       setResult(
@@ -193,7 +359,11 @@ export function ScreenshotScanPage() {
 
       const nextHistory = await fetchDetailedScanHistory(language);
       setHistoryItems(nextHistory);
-      setStatusMessage("Screenshot analysis complete. Result cards have been updated.");
+      setStatusMessage(
+        qrPayloads.length
+          ? `Screenshot analysis complete. ${qrPayloads.length} QR payload${qrPayloads.length === 1 ? "" : "s"} were decoded and inspected.`
+          : "Screenshot analysis complete. Result cards have been updated."
+      );
     } catch (scanError) {
       setError(scanError instanceof Error ? scanError.message : "Screenshot scan failed.");
       setResult(null);
@@ -202,7 +372,50 @@ export function ScreenshotScanPage() {
     }
   }
 
+  async function handleRescanEditedText(editedText: string) {
+    if (!selectedFile) {
+      setError("Keep the screenshot selected before re-running analysis with edited text.");
+      return;
+    }
+
+    if (!editedText.trim()) {
+      setError("Add some extracted text before running a manual OCR rescan.");
+      return;
+    }
+
+    setRescanBusy(true);
+    setError(null);
+    setStatusMessage("Re-running screenshot analysis with your edited OCR text and existing QR context...");
+
+    try {
+      const qrPayloads = result?.screenshotOcr?.qrPayloads?.length ? result.screenshotOcr.qrPayloads : await detectQrPayloads(selectedFile);
+      const payload = await executeScreenshotScan({
+        file: selectedFile,
+        language,
+        privacyMode,
+        qrPayloads,
+        ocrOverrideText: editedText,
+      });
+
+      setResult(
+        adaptMessageScanResult(payload, {
+          locale: language,
+          privacyMode
+        })
+      );
+
+      const nextHistory = await fetchDetailedScanHistory(language);
+      setHistoryItems(nextHistory);
+      setStatusMessage("Screenshot analysis refreshed using the edited OCR text.");
+    } catch (scanError) {
+      setError(scanError instanceof Error ? scanError.message : "Screenshot rescan failed.");
+    } finally {
+      setRescanBusy(false);
+    }
+  }
+
   function handleClear() {
+    stopCameraStream();
     setSelectedFile(null);
     setResult(null);
     setError(null);
@@ -397,7 +610,7 @@ export function ScreenshotScanPage() {
                         <span>Browse Files</span>
                       </span>
                     </button>
-                    <button type="button" onClick={() => cameraInputRef.current?.click()} className="editorial-button px-5 py-3">
+                    <button type="button" onClick={() => void handleOpenCamera()} className="editorial-button px-5 py-3">
                       <span className="flex items-center gap-2">
                         <CameraIcon />
                         <span>Take Photo</span>
@@ -426,7 +639,26 @@ export function ScreenshotScanPage() {
                 </div>
 
                 <div className="ghost-border min-h-[260px] overflow-hidden bg-surface-container-lowest/80">
-                  {previewUrl ? (
+                  {cameraOpen ? (
+                    <div className="flex h-full min-h-[260px] flex-col">
+                      <video ref={cameraVideoRef} autoPlay playsInline muted className="h-full min-h-[220px] w-full object-cover animate-fade-up" />
+                      <div className="flex flex-wrap gap-3 border-t border-outline-variant/20 bg-surface-container-low px-4 py-4">
+                        <button type="button" onClick={() => void handleCapturePhoto()} className="editorial-button px-5 py-3">
+                          Capture Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            stopCameraStream();
+                            setStatusMessage("Camera capture cancelled.");
+                          }}
+                          className="editorial-button px-5 py-3"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : previewUrl ? (
                     <img src={previewUrl} alt="Screenshot preview" className="h-full w-full object-cover animate-fade-up" />
                   ) : (
                     <div className="flex h-full min-h-[260px] items-center justify-center p-8 text-center">
@@ -477,15 +709,18 @@ export function ScreenshotScanPage() {
             {statusMessage ? <div className="ghost-border border-secondary/20 bg-primary-container/30 p-5 text-sm text-primary">{statusMessage}</div> : null}
           </section>
 
-          <ScreenshotScanResults
-            result={result}
-            loading={loading}
-            historyItems={historyItems}
-            onCopyReport={handleCopyReport}
-            onDownloadReport={handleDownloadReport}
-            onRestoreHistory={handleRestoreHistory}
-            reportBusy={reportBusy}
-          />
+            <ScreenshotScanResults
+              result={result}
+              loading={loading}
+              historyItems={historyItems}
+              onCopyReport={handleCopyReport}
+              onDownloadReport={handleDownloadReport}
+              onRestoreHistory={handleRestoreHistory}
+              onRescanEditedText={handleRescanEditedText}
+              reportBusy={reportBusy}
+              rescanBusy={rescanBusy}
+              rescanAvailable={Boolean(selectedFile)}
+            />
         </div>
 
         <div className="col-span-12 space-y-8 xl:col-span-4 xl:self-start">

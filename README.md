@@ -1,177 +1,452 @@
 # CyberCoach
 
-**AI-Powered Personal Cyber Safety Tool**
+AI-powered scam and phishing analysis for non-technical users.
 
-Built for the ISACA OC Sponsored Problem Challenge | AI Hackathon 2026 | Cal Poly Pomona
+CyberCoach helps a person paste a suspicious message, inspect a URL before visiting it, or upload a screenshot of a text/email, then receive a plain-language risk assessment with reasons and next steps.
 
----
+This repository's current implementation is:
 
-## What is CyberCoach?
+- `Next.js 14` frontend
+- `FastAPI` backend
+- shared phishing heuristics, privacy redaction, OCR, reporting, and session history services
 
-CyberCoach helps anyone — your parents, your grandparents, your coworkers — figure out if a message they received is a scam. No cybersecurity knowledge needed. Paste it in, get a clear answer.
+Note: older project notes may still mention a Streamlit app. The current runnable app in this repository is the Next.js + FastAPI stack described below.
 
-## The Problem
+## What The App Does
 
-Phishing attacks are the #1 cyber threat to individuals. Most people can't tell the difference between a real email from their bank and a convincing fake. Existing tools are built for security professionals, not for the person who just got a scary text saying their account is suspended.
+CyberCoach is designed for people who are not security experts. The product focuses on clarity, privacy, and guided action.
 
-## Our Solution
+Core user flows:
 
-A simple, trustworthy tool that:
-1. Takes a suspicious message (email, text, URL, or screenshot)
-2. Runs it through multiple layers of analysis
-3. Tells you — in plain language — whether it's safe, suspicious, or dangerous
-4. Gives you a checklist of exactly what to do next
+1. Message Scan
+Paste suspicious email, SMS, or chat content and analyze it for phishing or scam signals.
 
----
+2. URL Scan
+Inspect a suspicious link before opening it, including metadata precheck, domain analysis, and phishing-database lookup behavior.
 
-## How It Works
+3. Screenshot Scan
+Upload or capture an image of a suspicious message, extract visible text, and run the same downstream analysis pipeline.
 
-```
-User pastes message / URL / uploads screenshot
-                    |
-            Privacy Scrub
-    (PII auto-redacted before AI sees it)
-                    |
-        +------ Analysis ------+
-        |           |          |
-   Heuristic    Claude      GPT-5.3
-    Engine     Sonnet 4.6   (OpenRouter)
-   (local)    (OpenRouter)
-        |           |          |
-        +--- Results Merged ---+
-                    |
-    Risk Level + Consensus + Actions
-```
+Each scan returns:
 
-### Three Layers of Detection
+- a risk label: `Safe`, `Suspicious`, or `High Risk`
+- a heuristic score
+- confidence level
+- likely scam pattern
+- plain-language summary
+- top reasons
+- recommended actions
+- technical findings / triggered rules
+- optional downloadable report (`.txt` or `.md`)
 
-**Layer 1 — Heuristic Engine (runs locally, no API needed)**
-- 10+ pattern checks: suspicious domains, urgency language, credential requests, sender spoofing, homoglyph attacks, shortened URLs, IP-based URLs, excessive subdomains
-- PhishTank database lookup — cross-references URLs against thousands of confirmed phishing sites
-- Scored 0–15 with visual breakdown
+## Current Architecture
 
-**Layer 2 — Claude Sonnet 4.6**
-- Contextual AI analysis with structured JSON output
-- Uses heuristic findings as grounding evidence
-- Returns risk level, confidence score, plain-language explanation, and action steps
+The app is split into a frontend experience layer and a backend analysis layer.
 
-**Layer 3 — GPT-5.3**
-- Independent second opinion from a different model
-- Dual-model consensus: when both agree, users can trust the result more
-- When they disagree, the app flags it and recommends caution
+### Frontend
 
----
+The frontend is a `Next.js` App Router application in [`app`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/app), [`components`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/components), and [`lib`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/lib).
+
+Key entry points:
+
+- Homepage: [`app/page.tsx`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/app/page.tsx)
+- Shared scan router: [`app/scan/page.tsx`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/app/scan/page.tsx)
+- Message scan UI: [`components/scan/MessageScanPage.tsx`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/components/scan/MessageScanPage.tsx)
+- URL scan UI: [`components/scan/UrlScanPage.tsx`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/components/scan/UrlScanPage.tsx)
+- Screenshot scan UI: [`components/scan/ScreenshotScanPage.tsx`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/components/scan/ScreenshotScanPage.tsx)
+- Frontend scan client and adapters: [`lib/scan.ts`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/lib/scan.ts)
+
+The frontend does not call the Python backend directly from the browser. Instead, it uses same-origin Next.js API routes as proxy endpoints.
+
+### Backend
+
+The backend is a `FastAPI` app rooted at [`backend/app/main.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/main.py).
+
+Main backend areas:
+
+- API routes: [`backend/app/api/routes`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes)
+- Core config and env loading: [`backend/app/core`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/core)
+- Analysis services: [`backend/app/services`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services)
+- Request/response models: [`backend/app/models`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/models)
+- Local datasets and intel feed seed data: [`backend/app/data`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/data)
+
+### Request Flow
+
+Typical request path:
+
+`Browser UI -> Next.js API route -> FastAPI backend -> analysis services -> unified scan response -> UI render/report export`
+
+Example:
+
+- user submits message in the frontend
+- frontend calls [`app/api/scan/message/route.ts`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/app/api/scan/message/route.ts)
+- the route proxies to the backend using [`lib/backendProxy.ts`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/lib/backendProxy.ts)
+- FastAPI handles the request in [`backend/app/api/routes/scan.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes/scan.py)
+- the backend runs orchestration in [`backend/app/services/analyzer.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/analyzer.py)
+- the frontend adapts the response in [`lib/scan.ts`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/lib/scan.ts) and renders it in the scan result components
+
+## Detection Pipeline
+
+CyberCoach uses a layered analysis flow.
+
+### 1. Privacy Redaction
+
+When privacy mode is enabled, the backend attempts to redact sensitive content before model analysis.
+
+Implemented in:
+
+- [`backend/app/services/pii.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/pii.py)
+
+Examples of redacted data include:
+
+- email addresses
+- phone numbers
+- SSNs
+- credit-card-like numbers
+- some contextual personal identifiers
+
+### 2. Local Heuristics
+
+CyberCoach always runs local heuristic checks, even if no model API key is configured.
+
+Implemented in:
+
+- [`backend/app/services/heuristics.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/heuristics.py)
+
+Current heuristic categories include:
+
+- urgency language
+- requests for credentials or sensitive information
+- suspicious TLDs
+- domain mismatch against brand mentions
+- sender spoofing indicators
+- homoglyph-style deception
+- shortened URLs
+- raw IP-based URLs
+- excessive subdomains
+- phishing dataset lookups
+
+The heuristics layer also provides:
+
+- URL precheck metadata
+- built-in demo message samples
+- random real-phish examples when the phishing dataset is available
+
+### 3. Model-Assisted Analysis
+
+If an API key is configured, CyberCoach augments local heuristics with LLM analysis.
+
+Implemented in:
+
+- [`backend/app/services/llm.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/llm.py)
+
+Supported provider modes:
+
+- `Anthropic`
+- `OpenRouter`
+
+When `OpenRouter` is configured, the backend can run a dual-model style flow:
+
+- primary model
+- secondary model for an independent second pass
+
+If no model key is available or the model call fails, CyberCoach falls back to a heuristics-only result.
+
+### 4. OCR / Screenshot Analysis
+
+Screenshot scans first extract visible text from an uploaded image, then pass the extracted text into the shared analysis pipeline.
+
+Implemented in:
+
+- [`backend/app/services/ocr.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/ocr.py)
+- [`backend/app/services/analyzer.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/analyzer.py)
+
+Important behavior:
+
+- screenshot analysis requires an LLM-capable provider key
+- without a key, screenshot scanning is unavailable
 
 ## Features
 
-### Analysis
-- Three input modes: paste text, check URL, upload screenshot/photo
-- Image OCR via Claude Vision — photograph a suspicious message from your phone
-- Dual-model consensus validation with side-by-side reasoning
-- PhishTank real-time URL lookup against confirmed phishing database
-- Heuristic risk scoring with detailed breakdown
+### Analysis Features
 
-### Privacy
-- Privacy Mode (on by default) — auto-redacts emails, phone numbers, SSNs, credit cards, and names before AI analysis
-- Nothing is stored or logged
-- Works entirely offline with heuristics when no API key is provided
+- message scanning
+- URL scanning
+- screenshot/image scanning
+- local heuristics engine
+- optional model-assisted reasoning
+- phishing-dataset-backed URL lookup behavior
+- report export in text and markdown formats
 
-### Accessibility
-- Multi-language support: English, Spanish, Chinese, Vietnamese, Korean, Tagalog, French
-- Adjustable font size (Small / Default / Large / Extra Large)
-- High contrast mode
-- Plain-language explanations — no jargon
+### Privacy Features
 
-### User Experience
-- Animated intro with guided content reveal
-- Staggered result animations with risk badge stamp effect
-- High-risk results trigger glowing red alert with directional arrow to action steps
-- Siren animation on action items for urgent threats
-- Hover-to-enlarge on action checklist items
-- Dual progress banners (Claude + GPT) during analysis
-- Downloadable reports (.txt and .md)
-- Session history to review past scans
-- Cybersecurity micro-tips after each scan
-- "New here?" guided onboarding popover
+- privacy mode enabled by default in the scan UIs
+- backend-side PII redaction before model analysis
+- local heuristics still work without an API key
 
----
+### UX Features
+
+- premium landing page and scan layouts
+- scan history within the active backend session
+- curated intel feed with live session telemetry
+- multilingual scan output options:
+  - English
+  - Spanish
+  - Chinese
+  - Vietnamese
+  - Korean
+  - Tagalog
+  - French
+
+## Project Structure
+
+```text
+CyberCoach/
+├── app/                          # Next.js App Router pages and API proxy routes
+├── components/                   # Home and scan UI components
+├── lib/                          # Frontend API client, adapters, backend proxy helpers
+├── backend/
+│   └── app/
+│       ├── api/routes/           # FastAPI endpoints
+│       ├── core/                 # Config and env loading
+│       ├── data/                 # Intel feed + phishing datasets
+│       ├── models/               # Pydantic request/response models
+│       └── services/             # Heuristics, analyzer, OCR, LLM, reports, history
+├── UI Prototype/                 # Earlier design artifacts and prototypes
+├── SafetyCoach/                  # Implementation notes and migration docs
+├── package.json                  # Frontend scripts and dependencies
+├── requirements.txt             # Backend Python dependencies
+├── next.config.mjs              # Next.js config
+├── tailwind.config.ts           # Tailwind config
+└── .env                         # Local environment variables (should not contain committed secrets)
+```
+
+## API Surface
+
+The backend currently exposes the following routes under the default `/api` prefix:
+
+### Health
+
+- `GET /api/health`
+
+Returns backend status, version, and dataset availability.
+
+### Scan Endpoints
+
+- `POST /api/scan/message`
+- `POST /api/scan/url`
+- `POST /api/scan/screenshot`
+- `GET /api/scan/url-precheck?url=...`
+- `GET /api/scan/history`
+- `GET /api/scan/message-samples`
+- `GET /api/scan/capabilities`
+
+### Supporting Endpoints
+
+- `POST /api/report`
+- `GET /api/intel/feed`
+
+Implemented in:
+
+- [`backend/app/api/routes/scan.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes/scan.py)
+- [`backend/app/api/routes/report.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes/report.py)
+- [`backend/app/api/routes/intel.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes/intel.py)
+- [`backend/app/api/routes/health.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes/health.py)
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 18+ recommended
+- npm
+- Python 3.10+ recommended
+
+### 1. Install Frontend Dependencies
+
+```bash
+npm install
+```
+
+### 2. Install Backend Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Create Local Environment Variables
+
+Create a root `.env` file with the values you need.
+
+Minimal local example:
+
+```bash
+API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+Optional model configuration:
+
+```bash
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_MODEL=anthropic/claude-sonnet-4.6
+SECOND_MODEL=openai/gpt-5.3-chat
+```
+
+Alternative Anthropic-style configuration:
+
+```bash
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=your_key_here
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
+```
+
+The backend auto-loads these files if present:
+
+- `.env`
+- `.env.local`
+- `.env.development.local`
+
+That behavior is implemented in [`backend/app/core/secrets.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/core/secrets.py).
+
+### 4. Start The Backend
+
+```bash
+uvicorn backend.app.main:app --reload
+```
+
+Default backend URL:
+
+- `http://127.0.0.1:8000`
+
+FastAPI docs:
+
+- `http://127.0.0.1:8000/docs`
+
+### 5. Start The Frontend
+
+```bash
+npm run dev
+```
+
+Default frontend URL:
+
+- `http://localhost:3000`
+
+## Frontend Proxy Configuration
+
+The frontend proxies requests to the backend using [`lib/backendProxy.ts`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/lib/backendProxy.ts).
+
+Resolution order for the backend base URL:
+
+1. `API_BASE_URL`
+2. `NEXT_PUBLIC_API_BASE_URL`
+3. fallback: `http://127.0.0.1:8000/api`
+
+If the backend is unavailable, the proxy layer returns a helpful `503` response explaining how to point the frontend at the backend.
+
+## Datasets And Local Data
+
+Current checked-in backend data files:
+
+- [`backend/app/data/verified_online.csv`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/data/verified_online.csv)
+- [`backend/app/data/phishing_email.csv`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/data/phishing_email.csv)
+- [`backend/app/data/intel_feed.json`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/data/intel_feed.json)
+
+These support:
+
+- phishing URL lookup behavior
+- random phishing sample generation
+- curated intel feed content
+
+The health endpoint reports dataset availability counts.
+
+## Session State And History
+
+CyberCoach currently keeps scan history in memory on the backend.
+
+Implemented in:
+
+- [`backend/app/services/history.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/history.py)
+
+Important limitation:
+
+- history is not persistent across backend restarts
+
+## Reports
+
+The app can export scan results as:
+
+- `.txt`
+- `.md`
+
+Implemented in:
+
+- [`backend/app/services/reports.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/services/reports.py)
+- [`backend/app/api/routes/report.py`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/api/routes/report.py)
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Streamlit (Python) + custom CSS/JS |
-| AI Models | Claude Sonnet 4.6 + GPT-5.3 via OpenRouter |
-| Heuristics | Rule-based pattern detection (no dependencies) |
-| Threat Intel | PhishTank (URL lookup) + Kaggle Phishing Email Dataset |
-| Privacy | Regex-based PII redaction |
-| Deployment | Streamlit Cloud |
+### Frontend
 
----
+- Next.js 14
+- React 18
+- TypeScript
+- Tailwind CSS
 
-## Quick Start
+### Backend
 
-### Run Locally
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+- FastAPI
+- Pydantic v2
+- Uvicorn
+- `python-multipart` for screenshot upload handling
 
-### Deploy to Streamlit Cloud
-1. Push to GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Connect your repo and deploy
-4. Add secrets in the Streamlit dashboard (see below)
+### AI / Analysis
 
-### Configuration
+- Anthropic SDK
+- OpenRouter integration
+- local heuristics engine
 
-Create `.streamlit/secrets.toml`:
-```toml
-LLM_PROVIDER = "openrouter"
-OPENROUTER_API_KEY = "sk-or-v1-..."
-OPENROUTER_MODEL = "anthropic/claude-sonnet-4.6"
-SECOND_MODEL = "openai/gpt-5.3-chat"
-```
+## Security And Operational Notes
 
-### Threat Intelligence Data
+### Do Not Commit Real API Keys
 
-Place in the `data/` folder:
-- `verified_online.csv` — from [PhishTank](https://phishtank.org/developer_info.php)
-- `phishing_email.csv` — from [Kaggle](https://www.kaggle.com/datasets/naserabdullahalam/phishing-email-dataset)
+The repository should not store live model credentials in `.env` or other committed files.
 
----
+Recommended practice:
 
-## No API Key?
+- keep local secrets in untracked env files
+- rotate any key that has already been committed
+- use different keys for development and demos when possible
 
-CyberCoach still works without an API key. The heuristic engine and PhishTank lookup run entirely locally — no data leaves your device. AI features (dual-model analysis, image OCR, multi-language) require an OpenRouter or Anthropic API key.
+### Privacy Expectations
 
----
+CyberCoach includes privacy redaction before model analysis when privacy mode is enabled, but users should still treat uploaded content carefully, especially when external provider APIs are enabled.
 
-## Project Structure
-```
-CyberCoach/
-├── app.py                    # Main application
-├── config.toml               # Streamlit theme (CPP green/gold)
-├── requirements.txt          # Python dependencies
-├── data/
-│   ├── verified_online.csv   # PhishTank database
-│   └── phishing_email.csv    # Kaggle phishing samples
-└── .streamlit/
-    └── secrets.toml          # API keys (not committed)
-```
+### Screenshot Availability
 
----
+Screenshot scanning depends on a configured API provider. Message and URL heuristics can still function without model access.
 
-## Hackathon Rubric Alignment
+## Known Caveats
 
-| Criterion | How CyberCoach Addresses It |
-|---|---|
-| **Impact** | Protects non-technical users from the #1 cyber threat |
-| **Feasibility** | Runs in a browser, no install, works without API key |
-| **Trust** | Privacy Mode, PII redaction, dual-model validation, nothing stored |
-| **Clarity** | Plain language, visual risk badges, action checklists |
-| **Innovation** | Dual-model consensus, PhishTank integration, image OCR |
+- older documentation may still reference the legacy Streamlit app
+- scan history is in-memory only
+- screenshot analysis is unavailable without an API key
+- local behavior depends partly on dataset availability in [`backend/app/data`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/backend/app/data)
 
----
+## Useful Reference Files
 
-Built by Kai, Yaza, Minh and Alvin at Cal Poly Pomona
+- Runtime status and migration notes: [`SafetyCoach/IMPLEMENTATION_PROGRESS.md`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/SafetyCoach/IMPLEMENTATION_PROGRESS.md)
+- Functional breakdown and improvements: [`SafetyCoach/FUNCTIONS_AND_IMPROVEMENTS.md`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/SafetyCoach/FUNCTIONS_AND_IMPROVEMENTS.md)
+- Package metadata: [`package.json`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/package.json)
+- Backend dependencies: [`requirements.txt`](/Users/mnd/Desktop/AI%20Hackathon/CyberCoach/requirements.txt)
+
+## Team
+
+Built for the ISACA OC Sponsored Problem Challenge | AI Hackathon 2026 | Cal Poly Pomona.
+
+Original team credit in project materials:
+
+- Kai
+- Yaza
+- Minh
+- Alvin

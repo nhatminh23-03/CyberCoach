@@ -4,6 +4,14 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import { CheckCircleIcon, LockIcon, ShieldCheckIcon } from "@/components/home/icons";
+import {
+  DecisionSummaryPanel,
+  ModelAssessmentsPanel,
+  UrlEvidencePanel,
+  getConsensusStatusLabel,
+  getDecisionModeBadgeLabel,
+  getDecisionPanelCopy
+} from "@/components/scan/DecisionPanels";
 import { getScanLocaleCopy, type MessageScanResult } from "@/lib/scan";
 
 type ScanResultsProps = {
@@ -138,6 +146,7 @@ export function ScanResults({
 }: ScanResultsProps) {
   const [scoreOpen, setScoreOpen] = useState(false);
   const copy = useMemo(() => getScanLocaleCopy(result?.locale ?? "en"), [result?.locale]);
+  const decisionCopy = useMemo(() => getDecisionPanelCopy(result?.locale ?? "en"), [result?.locale]);
 
   if (loading) {
     return <LoadingResults />;
@@ -170,6 +179,16 @@ export function ScanResults({
               <p className="text-sm text-on-surface-variant">
                 {copy.result.confidence} {result.confidenceDisplay} · {result.providerLabel}
               </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="border border-secondary/30 bg-secondary/10 px-3 py-2 font-label text-[9px] font-bold uppercase tracking-[0.16em] text-secondary">
+                {getDecisionModeBadgeLabel(result.decisionSource, result.locale)}
+              </span>
+              {result.consensus ? (
+                <span className="border border-outline-variant/30 bg-surface-container-lowest/70 px-3 py-2 font-label text-[9px] font-bold uppercase tracking-[0.16em] text-vellum">
+                  {getConsensusStatusLabel(result.consensus.status, result.locale)}
+                </span>
+              ) : null}
             </div>
             <div className="ghost-border bg-surface-container-lowest/60 p-4">
               <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">
@@ -219,6 +238,20 @@ export function ScanResults({
             )}
           </div>
         </ResultShell>
+
+        <ResultShell title={decisionCopy.titles.decisionTrace} eyebrow={decisionCopy.titles.consensusEngine} className="col-span-12 md:col-span-4" delay={210}>
+          <DecisionSummaryPanel result={result} />
+        </ResultShell>
+
+        <ResultShell title={decisionCopy.titles.modelAssessments} eyebrow={decisionCopy.titles.crossModelReview} className="col-span-12 md:col-span-8" delay={225}>
+          <ModelAssessmentsPanel result={result} />
+        </ResultShell>
+
+        {result.urlEvidence.length > 0 ? (
+          <ResultShell title={decisionCopy.titles.urlEvidence} eyebrow={decisionCopy.titles.domainIntelligence} className="col-span-12" delay={235}>
+            <UrlEvidencePanel result={result} />
+          </ResultShell>
+        ) : null}
 
         {result.privacyNote ? (
           <ResultShell title={copy.result.privacyNoteTitle} eyebrow={copy.result.protectedReview} className="col-span-12 md:col-span-4" delay={240}>
