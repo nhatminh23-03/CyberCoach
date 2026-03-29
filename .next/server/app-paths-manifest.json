@@ -1,11 +1,10 @@
 {
-  "/page": "app/page.js",
+  "/api/scan/message-samples/route": "app/api/scan/message-samples/route.js",
+  "/api/scan/history/route": "app/api/scan/history/route.js",
+  "/api/intel/feed/route": "app/api/intel/feed/route.js",
   "/scan/url/page": "app/scan/url/page.js",
   "/scan/page": "app/scan/page.js",
-  "/scan/screenshot/page": "app/scan/screenshot/page.js",
-  "/api/scan/message-samples/route": "app/api/scan/message-samples/route.js",
-  "/api/intel/feed/route": "app/api/intel/feed/route.js",
-  "/api/scan/url-precheck/route": "app/api/scan/url-precheck/route.js",
+  "/page": "app/page.js",
   "/api/scan/capabilities/route": "app/api/scan/capabilities/route.js",
-  "/api/scan/history/route": "app/api/scan/history/route.js"
+  "/scan/screenshot/page": "app/scan/screenshot/page.js"
 }

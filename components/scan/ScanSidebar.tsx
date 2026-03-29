@@ -192,8 +192,8 @@ export function ScanSidebar({ activeItem = "message" }: { activeItem?: ActiveSca
                 active
                   ? "bg-surface-container text-secondary shadow-atmospheric"
                   : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
-              } ${index === 0 ? "animate-fade-up" : ""}`}
-              style={index === 0 ? undefined : { animationDelay: `${index * 60}ms` }}
+              } ${active ? "animate-fade-up" : ""}`}
+              style={active ? { animationDelay: `${index * 60}ms` } : undefined}
             >
               <span
                 className={`absolute inset-y-0 right-0 w-[2px] origin-top transition-transform duration-300 ${
