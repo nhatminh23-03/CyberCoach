@@ -123,21 +123,29 @@
   "fallback_translations": {
     "English": {
       "no_patterns": "No suspicious patterns detected",
-      "safe_action": "This appears safe, but stay cautious with unfamiliar senders",
-      "safe_explanation": "Our pattern scan didn't find obvious red flags. Use your judgment.",
-      "safe_action_url": "No strong URL warnings were triggered, but verify why you received this link before opening it",
-      "safe_explanation_url": "The URL scan did not find obvious structural or destination red flags. It is still safer to open the official site directly if the link was unexpected.",
+      "safe_action": "This looks lower risk, but it is still smart to be careful with unexpected messages or unfamiliar senders",
+      "safe_explanation": "CyberCoach did not find strong warning signs in this scan. It is still safest to verify anything unexpected before you act.",
+      "safe_action_url": "No strong link warnings were triggered, but it is still worth checking why you received this link before opening it",
+      "safe_explanation_url": "The link review did not find strong structural or destination warning signs. If the link was unexpected, it is still safer to open the official site directly.",
+      "safe_action_document": "No strong document-phishing signals were detected, but it is still wise to verify unexpected files before opening embedded links or scanning QR codes",
+      "safe_explanation_document": "The document review did not find strong phishing signals in the extracted text, links, or document metadata. If the file was unexpected, continue carefully.",
       "risky_actions": [
         "Do not click any links in this message",
-        "If it claims to be from a company, go directly to their official website",
-        "Report this message as spam/phishing"
+        "If it claims to be from a company, go to the official website yourself instead of using the message",
+        "Report or delete the message if it arrived unexpectedly or pushed you to act quickly"
       ],
       "risky_actions_url": [
         "Do not open this link until you verify who sent it and why",
         "If it claims to be from a company or service, go to the official site yourself instead of using this URL",
         "Report or delete the link if it arrived unexpectedly or with pressure to act quickly"
       ],
-      "risky_explanation": "Our pattern scan flagged multiple warning signs. Exercise caution."
+      "risky_actions_document": [
+        "Do not click links, scan QR codes, or sign in from this document until you verify who sent it",
+        "If the file claims to come from a trusted service, open that service directly in your browser instead of using the document",
+        "Forward the file to your IT, security, or fraud team if it was unexpected or asks for login, payment, or signature action"
+      ],
+      "risky_explanation": "CyberCoach found several warning signs in this scan. Treat it carefully until you can verify it another way.",
+      "risky_explanation_document": "The document review found multiple phishing-style warning signs in the file content, embedded actions, or destinations. Treat this attachment as risky until it is independently verified."
     },
     "Spanish": {
       "no_patterns": "No se detectaron patrones sospechosos",

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LockIcon } from "@/components/home/icons";
 import { Header } from "@/components/home/Header";
+import { ResultDiscoveryCta, useScanResultDiscovery } from "@/components/scan/ResultDiscovery";
 import { ScanFooter } from "@/components/scan/ScanFooter";
 import { ScanSidebar } from "@/components/scan/ScanSidebar";
 import { UrlScanResults } from "@/components/scan/UrlScanResults";
@@ -13,7 +14,10 @@ import {
   buildPlainTextReport,
   downloadBackendReport,
   executeUrlScan,
+  fetchDetailedScanHistory,
   fetchUrlPrecheck,
+  resolveSupportedLocale,
+  type DetailedScanHistoryItem,
   type MessageScanResult,
   type SupportedLocale,
   type UrlPrecheck
@@ -21,6 +25,7 @@ import {
 
 type UrlScanPageProps = {
   initialQuery: string;
+  initialAutoRun?: boolean;
 };
 
 const STORAGE_KEY = "cybercoach:url-scan-input";
@@ -45,17 +50,26 @@ function WarningGlyph({ active }: { active: boolean }) {
   );
 }
 
-export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
+export function UrlScanPage({ initialQuery, initialAutoRun = false }: UrlScanPageProps) {
   const [urlInput, setUrlInput] = useState(initialQuery);
   const [privacyMode, setPrivacyMode] = useState(true);
   const [language, setLanguage] = useState("en");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MessageScanResult | null>(null);
+  const [historyItems, setHistoryItems] = useState<DetailedScanHistoryItem[]>([]);
   const [precheck, setPrecheck] = useState<UrlPrecheck | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [precheckError, setPrecheckError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [reportBusy, setReportBusy] = useState<"copy" | "txt" | "md" | null>(null);
+  const autoRunRef = useRef<string | null>(null);
+  const {
+    resultsSectionRef,
+    showSeeResultsCta,
+    scrollToResults,
+    resultSpotlightActive,
+    traceHighlightKey
+  } = useScanResultDiscovery({ result, loading });
 
   useEffect(() => {
     if (initialQuery || typeof window === "undefined") {
@@ -66,6 +80,38 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
       setUrlInput(saved);
     }
   }, [initialQuery]);
+
+  useEffect(() => {
+    if (!initialAutoRun || typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("autorun") && !url.searchParams.has("source")) {
+      return;
+    }
+
+    url.searchParams.delete("autorun");
+    url.searchParams.delete("source");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [initialAutoRun]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHistory() {
+      const items = await fetchDetailedScanHistory(language);
+      if (!cancelled) {
+        setHistoryItems(items.filter((item) => item.scanType === "url"));
+      }
+    }
+
+    void loadHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language]);
 
   useEffect(() => {
     const trimmed = urlInput.trim();
@@ -120,8 +166,8 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
     return parts.join(" · ");
   }, [precheck]);
 
-  async function handleAnalyze() {
-    const trimmed = urlInput.trim();
+  const handleAnalyze = useCallback(async (overrideUrl?: string) => {
+    const trimmed = (overrideUrl ?? urlInput).trim();
     if (!trimmed) {
       setError("Paste a suspicious URL before running analysis.");
       return;
@@ -148,6 +194,8 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
           privacyMode
         })
       );
+      const nextHistory = await fetchDetailedScanHistory(language);
+      setHistoryItems(nextHistory.filter((item) => item.scanType === "url"));
       setStatusMessage("URL analysis complete. Metadata and result cards have been refreshed.");
     } catch (scanError) {
       setError(scanError instanceof Error ? scanError.message : "URL scan failed.");
@@ -155,6 +203,29 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
     } finally {
       setLoading(false);
     }
+  }, [language, privacyMode, urlInput]);
+
+  useEffect(() => {
+    const trimmed = initialQuery.trim();
+    if (!initialAutoRun || !trimmed || autoRunRef.current === trimmed) {
+      return;
+    }
+
+    autoRunRef.current = trimmed;
+    void handleAnalyze(trimmed);
+  }, [handleAnalyze, initialAutoRun, initialQuery]);
+
+  function handleRestoreHistory(item: DetailedScanHistoryItem) {
+    const historyLocale = resolveSupportedLocale(item.raw.metadata?.language?.toString() ?? language);
+    setLanguage(historyLocale);
+    setUrlInput(item.raw.original_input);
+    setResult(
+      adaptMessageScanResult(item.raw, {
+        locale: historyLocale,
+        privacyMode: Boolean(item.raw.redacted_input || (item.raw.metadata?.redaction_count ?? 0))
+      })
+    );
+    setStatusMessage("Restored a saved URL scan from the current session.");
   }
 
   async function handleCopyReport() {
@@ -193,24 +264,24 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
     <>
       <Header active="Scans" />
 
-      <main className="mx-auto grid max-w-[1440px] grid-cols-12 gap-8 px-4 pb-16 pt-20 sm:px-6 sm:pt-24 lg:px-8 xl:gap-12">
+      <main className="mx-auto grid max-w-[1440px] grid-cols-12 gap-6 px-4 pb-14 pt-16 sm:px-6 sm:pb-16 sm:pt-20 lg:gap-8 lg:px-8 lg:pt-24 xl:gap-12">
         <ScanSidebar activeItem="url" />
 
-        <div className="col-span-12 space-y-10 xl:col-span-6 xl:space-y-12">
+        <div className="col-span-12 space-y-8 lg:space-y-10 xl:col-span-6 xl:space-y-12">
           <section className="animate-fade-up space-y-4">
             <div className="flex items-center space-x-3">
               <span className="h-px w-12 bg-secondary" />
               <span className="font-label text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
-                Sovereign Intelligence Unit
+                Link Review
               </span>
             </div>
 
             <h1 className="max-w-3xl font-headline text-4xl font-extrabold leading-none tracking-editorial text-on-surface sm:text-5xl lg:text-6xl">
-              URL <span className="text-secondary">INTELLIGENCE</span> SCAN.
+              URL <span className="text-secondary">SAFETY</span> CHECK.
             </h1>
 
             <p className="max-w-xl pt-2 text-base leading-relaxed text-on-surface-variant sm:pt-4 sm:text-lg">
-              Deploy forensic URL analysis to identify deceptive domains, phishing-database matches, and suspicious endpoint structure before you visit.
+              Check whether a link looks suspicious before you open it, including domain tricks, phishing-database matches, and risky destination behavior.
             </p>
           </section>
 
@@ -249,7 +320,7 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
               <div className="group flex items-center justify-between border border-outline-variant/20 bg-surface-container-low p-6 transition-all hover:border-secondary/30">
                 <div>
                   <span className="mb-1 block font-label text-[10px] uppercase tracking-widest text-on-primary-container">
-                    Linguistic Engine
+                    Review Language
                   </span>
                   <span className="font-headline font-bold text-on-surface">Language</span>
                 </div>
@@ -272,7 +343,7 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
 
             <div className="space-y-4">
               <label className="block font-label text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container">
-                Target Endpoint URL
+                Link To Check
               </label>
 
               <div className="flex flex-col gap-4 md:flex-row">
@@ -292,7 +363,7 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
                   type="button"
                   onClick={() => void handleAnalyze()}
                   disabled={loading}
-                  className={`min-w-[180px] bg-secondary px-8 py-4 font-label text-xs font-bold uppercase tracking-[0.24em] text-on-secondary transition-all hover:opacity-90 active:scale-95 sm:py-5 ${
+                  className={`w-full bg-secondary px-6 py-4 font-label text-xs font-bold uppercase tracking-[0.24em] text-on-secondary transition-all hover:opacity-90 active:scale-95 sm:min-w-[180px] sm:w-auto sm:px-8 sm:py-5 ${
                     loading ? "animate-soft-pulse opacity-80" : ""
                   }`}
                 >
@@ -316,12 +387,12 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
                 >
                   {precheck.phishTankLoaded ? (
                     precheck.phishTankHit ? (
-                      "CONFIRMED PHISHING — This URL is in the PhishTank database of verified phishing sites. Do not visit it."
+                      "Confirmed phishing: this link appears in the PhishTank database of verified phishing sites. Do not open it."
                     ) : (
-                      `Not found in PhishTank (${precheck.phishTankCount.toLocaleString()} known phishing URLs checked).`
+                      `Not found in PhishTank (${precheck.phishTankCount.toLocaleString()} known phishing links checked).`
                     )
                   ) : (
-                    "PhishTank dataset is not currently loaded in the backend."
+                    "The phishing database is not available in the backend right now."
                   )}
                 </div>
               ) : null}
@@ -330,8 +401,8 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
                 <LockIcon className="h-4 w-4 shrink-0 text-secondary" />
                 <span>
                   {privacyMode
-                    ? "Nothing is stored. Privacy Mode is active and sensitive details can be redacted before model analysis."
-                    : "Nothing is stored. Your URL is analyzed ephemerally during this session."}
+                  ? "Nothing is stored by default. Privacy Mode can redact sensitive details before the final review."
+                  : "Nothing is stored by default. This link is reviewed only for the current session."}
                 </span>
               </div>
 
@@ -351,24 +422,38 @@ export function UrlScanPage({ initialQuery }: UrlScanPageProps) {
             </div>
           </section>
 
-          <UrlScanResults
-            result={result}
-            precheck={precheck}
-            loading={loading}
-            onCopyReport={handleCopyReport}
-            onDownloadReport={handleDownloadReport}
-            reportBusy={reportBusy}
-          />
+          <div
+            ref={resultsSectionRef}
+            className={`scroll-mt-28 border border-transparent transition-all duration-500 ${
+              resultSpotlightActive ? "scan-results-spotlight" : ""
+            }`}
+          >
+            <UrlScanResults
+              result={result}
+              precheck={precheck}
+              loading={loading}
+              onCopyReport={handleCopyReport}
+              onDownloadReport={handleDownloadReport}
+              reportBusy={reportBusy}
+              decisionHighlightKey={traceHighlightKey}
+            />
+          </div>
         </div>
 
-        <div className="col-span-12 space-y-8 xl:col-span-4 xl:self-start">
+        <div className="col-span-12 space-y-6 lg:space-y-8 xl:col-span-4 xl:self-start">
           <UrlScanRightRail
             result={result}
             loading={loading}
             onDownloadPrimaryReport={() => handleDownloadReport("txt")}
+            historyItems={historyItems}
+            onRestoreHistory={handleRestoreHistory}
           />
         </div>
       </main>
+
+      {showSeeResultsCta && result ? (
+        <ResultDiscoveryCta onClick={scrollToResults} />
+      ) : null}
 
       <ScanFooter />
     </>

@@ -1,0 +1,26 @@
+{
+  "bank_impersonation": {
+    "label": "Bank impersonation call",
+    "transcript": "Hello, this is the fraud department for your credit card account. We detected a suspicious charge and need you to confirm your identity, stay on the line, and read back the one-time code we just sent.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["voice_bank_impersonation", "voice_call_control", "voice_otp_request"]
+  },
+  "family_emergency": {
+    "label": "Family emergency scam",
+    "transcript": "Grandma, it is your grandson. I was in an accident and I need bail money right away. Please do not tell anyone else yet and send the payment today.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["voice_family_emergency", "voice_payment_request", "voice_secrecy_pressure"]
+  },
+  "government_pressure": {
+    "label": "Government pressure call",
+    "transcript": "This is Officer Ramirez from the court division. If you do not make this payment today, police will be sent to your address. Do not hang up while we process the transfer.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["voice_government_impersonation", "voice_payment_request", "voice_call_control"]
+  },
+  "safe_support": {
+    "label": "Safe customer support style call",
+    "transcript": "Thanks for calling customer support. I can help you reset the app, and if you are unsure, please hang up and use the number on your card statement.",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  }
+}

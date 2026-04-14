@@ -69,13 +69,15 @@ def generate_text_report(result: Any) -> str:
     evidence_buckets = metadata.get("evidence_buckets") or []
     url_live_inspection = metadata.get("url_live_inspection") or []
     ocr_metadata = metadata.get("ocr") or {}
+    document_metadata = metadata.get("document") or {}
+    voice_metadata = metadata.get("voice") or {}
 
     if metadata.get("decision_source"):
-        lines.append(f"\nDecision Source: {metadata['decision_source']}")
+        lines.append(f"\nReview Source: {metadata['decision_source']}")
     if consensus.get("summary"):
-        lines.append(f"Consensus: {consensus['summary']}")
+        lines.append(f"AI Review Summary: {consensus['summary']}")
     if model_runs:
-        lines.append("\nModel Assessments:")
+        lines.append("\nModel Reviews:")
         for index, item in enumerate(model_runs, start=1):
             confidence = item.get("confidence")
             confidence_label = f" ({round(confidence * 100)}%)" if isinstance(confidence, (int, float)) else ""
@@ -84,11 +86,11 @@ def generate_text_report(result: Any) -> str:
             if explanation:
                 lines.append(f"     {explanation}")
     if heuristic_findings:
-        lines.append("\nTechnical Details:")
+        lines.append("\nTechnical Reasons:")
         for index, item in enumerate(heuristic_findings, start=1):
             lines.append(f"  {index}. [{item.get('severity', 'medium')}] {item.get('type', 'signal')}: {item.get('detail', '')}")
     if evidence_buckets:
-        lines.append("\nEvidence Buckets:")
+        lines.append("\nWhere The Risk Comes From:")
         for item in evidence_buckets:
             lines.append(
                 f"  - {item.get('key', 'bucket')}: score {item.get('score', 0)} | findings {item.get('finding_count', 0)}"
@@ -96,13 +98,13 @@ def generate_text_report(result: Any) -> str:
             if item.get("summary"):
                 lines.append(f"    {item.get('summary')}")
     if url_evidence:
-        lines.append("\nURL Evidence:")
+        lines.append("\nLink Details:")
         for index, item in enumerate(url_evidence, start=1):
             lines.append(
                 f"  {index}. {item.get('domain', '')} -> registered domain {item.get('registrable_domain', '')} | tld {item.get('tld', '')}"
             )
     if url_live_inspection:
-        lines.append("\nDestination Inspection:")
+        lines.append("\nDestination Check:")
         for index, item in enumerate(url_live_inspection, start=1):
             lines.append(f"  {index}. {item.get('normalized_url', '')}")
             if item.get("blocked_reason"):
@@ -142,6 +144,84 @@ def generate_text_report(result: Any) -> str:
             lines.append("  detected QR codes:")
             for index, item in enumerate(qr_payloads, start=1):
                 lines.append(f"    {index}. {item}")
+    if document_metadata:
+        lines.append("\nDocument X-Ray:")
+        lines.append(f"  file: {document_metadata.get('file_name', 'uploaded-document')}")
+        lines.append(f"  type: {str(document_metadata.get('file_type', 'document')).upper()}")
+        file_size = document_metadata.get("file_size")
+        if isinstance(file_size, int):
+            lines.append(f"  size: {file_size} bytes")
+        if document_metadata.get("parser"):
+            lines.append(f"  parser: {document_metadata.get('parser')}")
+        lines.append(f"  inspectable: {'yes' if document_metadata.get('inspectable', True) else 'limited'}")
+        if document_metadata.get("protected"):
+            lines.append("  protected or encrypted: yes")
+        if document_metadata.get("macro_enabled"):
+            lines.append("  macro-enabled: yes")
+        if document_metadata.get("image_based"):
+            lines.append("  image-based: yes")
+        if document_metadata.get("ocr_fallback_used"):
+            line = f"  OCR fallback: yes ({document_metadata.get('ocr_pages_analyzed', 0)} page(s) checked"
+            if document_metadata.get("ocr_page_limit"):
+                line += f", limit {document_metadata.get('ocr_page_limit')}"
+            line += ")"
+            lines.append(line)
+        if document_metadata.get("page_count") is not None:
+            lines.append(f"  pages: {document_metadata.get('page_count')}")
+        if document_metadata.get("section_count") is not None:
+            lines.append(f"  sections: {document_metadata.get('section_count')}")
+        if document_metadata.get("image_count") is not None:
+            lines.append(f"  embedded images: {document_metadata.get('image_count')}")
+        if document_metadata.get("text_preview"):
+            lines.append(f"  preview: {document_metadata.get('text_preview')}")
+        limitations = document_metadata.get("limitations") or []
+        if limitations:
+            lines.append("  limitations:")
+            for item in limitations:
+                lines.append(f"    - {item}")
+        link_pairs = document_metadata.get("link_pairs") or []
+        if link_pairs:
+            lines.append("  embedded links:")
+            for index, item in enumerate(link_pairs, start=1):
+                display_text = item.get("display_text") or f"link {index}"
+                target_url = item.get("target_url") or "unknown destination"
+                lines.append(f"    {index}. {display_text} -> {target_url}")
+        qr_payloads = document_metadata.get("qr_payloads") or []
+        if qr_payloads:
+            lines.append("  detected document QR codes:")
+            for index, item in enumerate(qr_payloads, start=1):
+                lines.append(f"    {index}. {item}")
+    if voice_metadata:
+        lines.append("\nCall Guard:")
+        lines.append(f"  session id: {voice_metadata.get('session_id', 'voice-session')}")
+        if voice_metadata.get("analysis_state"):
+            lines.append(f"  state: {voice_metadata.get('analysis_state')}")
+        if voice_metadata.get("elapsed_seconds") is not None:
+            lines.append(f"  elapsed: {voice_metadata.get('elapsed_seconds')}s")
+        if voice_metadata.get("transcript_word_count") is not None:
+            lines.append(f"  transcript words: {voice_metadata.get('transcript_word_count')}")
+        warnings = voice_metadata.get("live_warnings") or []
+        if warnings:
+            lines.append("  live warnings:")
+            for item in warnings:
+                lines.append(f"    - {item}")
+        questions = voice_metadata.get("challenge_questions") or []
+        if questions:
+            lines.append("  challenge questions:")
+            for index, item in enumerate(questions, start=1):
+                lines.append(f"    {index}. {item}")
+        voice_signals = voice_metadata.get("voice_signals") or []
+        if voice_signals:
+            lines.append("  voice-pattern signals:")
+            for item in voice_signals:
+                lines.append(
+                    f"    - [{item.get('severity', 'low')}] {item.get('type', 'voice_signal')}: {item.get('detail', '')}"
+                )
+        segments = voice_metadata.get("transcript_segments") or []
+        if segments:
+            lines.append("  transcript segments:")
+            for index, item in enumerate(segments[-8:], start=1):
+                lines.append(f"    {index}. {item.get('text', '')}")
     if payload.get("redacted_input"):
         redaction_count = payload.get("metadata", {}).get("redaction_count", 0)
         lines.append(f"\n[{translations['privacy_mode']}: {redaction_count} item(s) redacted before analysis]")
@@ -177,13 +257,15 @@ def generate_markdown_report(result: Any) -> str:
     evidence_buckets = metadata.get("evidence_buckets") or []
     url_live_inspection = metadata.get("url_live_inspection") or []
     ocr_metadata = metadata.get("ocr") or {}
+    document_metadata = metadata.get("document") or {}
+    voice_metadata = metadata.get("voice") or {}
 
     if metadata.get("decision_source"):
-        lines.append(f"\n**Decision Source:** {metadata['decision_source']}")
+        lines.append(f"\n**Review Source:** {metadata['decision_source']}")
     if consensus.get("summary"):
-        lines.append(f"\n**Consensus:** {consensus['summary']}")
+        lines.append(f"\n**AI Review Summary:** {consensus['summary']}")
     if model_runs:
-        lines.append("\n## Model Assessments")
+        lines.append("\n## Model Reviews")
         for item in model_runs:
             confidence = item.get("confidence")
             confidence_label = f" ({round(confidence * 100)}%)" if isinstance(confidence, (int, float)) else ""
@@ -192,23 +274,23 @@ def generate_markdown_report(result: Any) -> str:
             if explanation:
                 lines.append(f"  - {explanation}")
     if heuristic_findings:
-        lines.append("\n## Technical Details")
+        lines.append("\n## Technical Reasons")
         for item in heuristic_findings:
             lines.append(f"- **{item.get('type', 'signal')}** ({item.get('severity', 'medium')}): {item.get('detail', '')}")
     if evidence_buckets:
-        lines.append("\n## Evidence Buckets")
+        lines.append("\n## Where The Risk Comes From")
         for item in evidence_buckets:
             lines.append(f"- **{item.get('key', 'bucket')}**: score {item.get('score', 0)} with {item.get('finding_count', 0)} finding(s)")
             if item.get("summary"):
                 lines.append(f"  - {item.get('summary')}")
     if url_evidence:
-        lines.append("\n## URL Evidence")
+        lines.append("\n## Link Details")
         for item in url_evidence:
             lines.append(
                 f"- **{item.get('domain', '')}** -> registered domain `{item.get('registrable_domain', '')}` with TLD `{item.get('tld', '')}`"
             )
     if url_live_inspection:
-        lines.append("\n## Destination Inspection")
+        lines.append("\n## Destination Check")
         for item in url_live_inspection:
             lines.append(f"- **{item.get('normalized_url', '')}**")
             if item.get("blocked_reason"):
@@ -248,6 +330,81 @@ def generate_markdown_report(result: Any) -> str:
             lines.append("\n## Detected QR Codes")
             for item in qr_payloads:
                 lines.append(f"- `{item}`")
+    if document_metadata:
+        lines.append("\n## Document X-Ray")
+        lines.append(f"- **File:** {document_metadata.get('file_name', 'uploaded-document')}")
+        lines.append(f"- **Type:** {str(document_metadata.get('file_type', 'document')).upper()}")
+        if document_metadata.get("parser"):
+            lines.append(f"- **Parser:** {document_metadata.get('parser')}")
+        lines.append(f"- **Inspectable:** {'yes' if document_metadata.get('inspectable', True) else 'limited'}")
+        if document_metadata.get("protected"):
+            lines.append("- **Protected or encrypted:** yes")
+        if document_metadata.get("macro_enabled"):
+            lines.append("- **Macro-enabled:** yes")
+        if document_metadata.get("image_based"):
+            lines.append("- **Image-based:** yes")
+        if document_metadata.get("ocr_fallback_used"):
+            line = f"- **OCR fallback:** yes ({document_metadata.get('ocr_pages_analyzed', 0)} page(s) checked"
+            if document_metadata.get("ocr_page_limit"):
+                line += f", limit {document_metadata.get('ocr_page_limit')}"
+            line += ")"
+            lines.append(line)
+        if document_metadata.get("page_count") is not None:
+            lines.append(f"- **Pages:** {document_metadata.get('page_count')}")
+        if document_metadata.get("section_count") is not None:
+            lines.append(f"- **Sections:** {document_metadata.get('section_count')}")
+        if document_metadata.get("image_count") is not None:
+            lines.append(f"- **Embedded images:** {document_metadata.get('image_count')}")
+        if document_metadata.get("text_preview"):
+            lines.append(f"- **Preview:** {document_metadata.get('text_preview')}")
+        limitations = document_metadata.get("limitations") or []
+        if limitations:
+            lines.append("\n### Inspection Limitations")
+            for item in limitations:
+                lines.append(f"- {item}")
+        link_pairs = document_metadata.get("link_pairs") or []
+        if link_pairs:
+            lines.append("\n### Embedded Links")
+            for item in link_pairs:
+                display_text = item.get("display_text") or "link"
+                target_url = item.get("target_url") or "unknown destination"
+                lines.append(f"- **{display_text}** -> `{target_url}`")
+        qr_payloads = document_metadata.get("qr_payloads") or []
+        if qr_payloads:
+            lines.append("\n### Detected Document QR Codes")
+            for item in qr_payloads:
+                lines.append(f"- `{item}`")
+    if voice_metadata:
+        lines.append("\n## Call Guard")
+        lines.append(f"- **Session ID:** `{voice_metadata.get('session_id', 'voice-session')}`")
+        if voice_metadata.get("analysis_state"):
+            lines.append(f"- **State:** {voice_metadata.get('analysis_state')}")
+        if voice_metadata.get("elapsed_seconds") is not None:
+            lines.append(f"- **Elapsed:** {voice_metadata.get('elapsed_seconds')}s")
+        if voice_metadata.get("transcript_word_count") is not None:
+            lines.append(f"- **Transcript Words:** {voice_metadata.get('transcript_word_count')}")
+        warnings = voice_metadata.get("live_warnings") or []
+        if warnings:
+            lines.append("- **Live Warnings:**")
+            for item in warnings:
+                lines.append(f"  - {item}")
+        questions = voice_metadata.get("challenge_questions") or []
+        if questions:
+            lines.append("- **Challenge Questions:**")
+            for item in questions:
+                lines.append(f"  - {item}")
+        voice_signals = voice_metadata.get("voice_signals") or []
+        if voice_signals:
+            lines.append("- **Voice-Pattern Signals:**")
+            for item in voice_signals:
+                lines.append(
+                    f"  - **{item.get('type', 'voice_signal')}** ({item.get('severity', 'low')}): {item.get('detail', '')}"
+                )
+        segments = voice_metadata.get("transcript_segments") or []
+        if segments:
+            lines.append("- **Transcript Segments:**")
+            for item in segments[-8:]:
+                lines.append(f"  - {item.get('text', '')}")
     if payload.get("redacted_input"):
         redaction_count = payload.get("metadata", {}).get("redaction_count", 0)
         lines.append(f"\n> {translations['privacy_mode']}: {redaction_count} item(s) redacted before analysis")

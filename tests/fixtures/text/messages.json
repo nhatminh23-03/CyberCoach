@@ -1,0 +1,62 @@
+{
+  "bank_fraud_alert": {
+    "label": "Bank fraud alert phishing",
+    "text": "Chase Fraud Alert: We detected suspicious activity on your debit card. Confirm your account now at https://chase-security-check-login.co/verify or your account will be suspended today.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["credential_ask", "urgency", "official_entity_impersonation"]
+  },
+  "dmv_impersonation": {
+    "label": "DMV impersonation",
+    "text": "DMV Notice: Your vehicle registration has been suspended. Pay the outstanding penalty within 24 hours at https://ca-dmv-renewal-help.top/pay to avoid extra fees.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["urgency", "legal_threat", "suspicious_tld"]
+  },
+  "gift_card_scam": {
+    "label": "Gift card scam",
+    "text": "Hey this is the CEO. I need you to buy 6 Apple gift cards right now for client thank-you gifts. Scratch them and text me the codes before the next meeting.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["urgency"]
+  },
+  "package_delivery_scam": {
+    "label": "Package delivery scam",
+    "text": "USPS: Your package could not be delivered. Update your address now: http://usps-delivery-help.top/track/88421",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["suspicious_tld", "urgency"]
+  },
+  "boss_impersonation": {
+    "label": "Boss impersonation",
+    "text": "Can you handle a quick wire for me before lunch? I am stuck in meetings, so keep this private and send the payment confirmation as soon as it is done.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["urgency"]
+  },
+  "fake_password_reset": {
+    "label": "Fake password reset",
+    "text": "Microsoft password reset request. Review the request and sign in now at https://microsoft-secure-reset-login.co/review to keep your mailbox active.",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["credential_ask", "official_entity_impersonation"]
+  },
+  "benign_newsletter": {
+    "label": "Benign newsletter",
+    "text": "GitHub Monthly Digest: Here are the repositories you starred this month, plus a few security articles from the official GitHub blog.",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  },
+  "normal_banking_notification": {
+    "label": "Normal banking notification",
+    "text": "Your checking account statement is ready. Sign in to your usual mobile app or visit the bank website you normally use.",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  },
+  "safe_personal_text": {
+    "label": "Safe personal text",
+    "text": "Running 10 minutes late. I will meet you at the coffee shop on Main Street.",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  },
+  "borderline_suspicious": {
+    "label": "Borderline suspicious",
+    "text": "We noticed a sign-in attempt. If this was not you, check your account from the official app and update your password there.",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  }
+}

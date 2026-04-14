@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 class ScanResponse(BaseModel):
     """Unified response schema shared across all scan types."""
 
-    scan_type: Literal["message", "url", "screenshot"]
+    scan_type: Literal["message", "url", "screenshot", "document", "voice"]
     risk_label: Literal["Safe", "Suspicious", "High Risk"]
     risk_score: int = Field(default=0, ge=0)
     confidence: Literal["Low", "Medium", "High"]

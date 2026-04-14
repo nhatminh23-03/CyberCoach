@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CheckCircleIcon, LockIcon, ShieldCheckIcon } from "@/components/home/icons";
 import {
@@ -12,6 +12,7 @@ import {
   getDecisionModeBadgeLabel,
   getDecisionPanelCopy
 } from "@/components/scan/DecisionPanels";
+import { useHighlightOnFirstVisible } from "@/components/scan/useHighlightOnFirstVisible";
 import { getScanLocaleCopy, type MessageScanResult } from "@/lib/scan";
 
 type ScanResultsProps = {
@@ -21,6 +22,8 @@ type ScanResultsProps = {
   onDownloadReport: (format: "txt" | "md") => Promise<void>;
   reportBusy: "copy" | "txt" | "md" | null;
   notice: string | null;
+  showDecisionPanels?: boolean;
+  decisionHighlightKey?: number;
 };
 
 function ResultShell({
@@ -28,17 +31,27 @@ function ResultShell({
   eyebrow,
   children,
   className = "",
-  delay = 0
+  delay = 0,
+  highlightSessionKey = null,
+  highlightEnabled = false
 }: {
   title: string;
   eyebrow: string;
   children: ReactNode;
   className?: string;
   delay?: number;
+  highlightSessionKey?: string | null;
+  highlightEnabled?: boolean;
 }) {
+  const { ref, activeClassName } = useHighlightOnFirstVisible({
+    sessionKey: highlightSessionKey,
+    enabled: highlightEnabled
+  });
+
   return (
     <section
-      className={`ghost-border animate-fade-up bg-surface-container-low p-8 ${className}`}
+      ref={ref}
+      className={`ghost-border scan-card-highlightable animate-fade-up bg-surface-container-low p-8 ${activeClassName} ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">{eyebrow}</p>
@@ -136,17 +149,53 @@ function RecommendedActionsCard({ actions }: { actions: string[] }) {
   );
 }
 
+function DocumentBadge({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "secondary" | "alert" }) {
+  const className =
+    tone === "secondary"
+      ? "border-secondary/30 bg-secondary/10 text-secondary"
+      : tone === "alert"
+        ? "border-[#ffb4ab]/30 bg-[#93000a]/15 text-[#ffdad6]"
+        : "border-outline-variant/30 bg-surface-container-lowest/60 text-vellum";
+
+  return (
+    <span className={`border px-3 py-2 font-label text-[9px] font-bold uppercase tracking-[0.16em] ${className}`}>
+      {children}
+    </span>
+  );
+}
+
 export function ScanResults({
   result,
   loading,
   onCopyReport,
   onDownloadReport,
   reportBusy,
-  notice
+  notice,
+  showDecisionPanels = true,
+  decisionHighlightKey = 0
 }: ScanResultsProps) {
   const [scoreOpen, setScoreOpen] = useState(false);
+  const [decisionHighlightActive, setDecisionHighlightActive] = useState(false);
   const copy = useMemo(() => getScanLocaleCopy(result?.locale ?? "en"), [result?.locale]);
   const decisionCopy = useMemo(() => getDecisionPanelCopy(result?.locale ?? "en"), [result?.locale]);
+  const highlightSessionKey = result
+    ? [result.raw.metadata?.history_id ?? "", result.riskScore, result.summary, result.likelyScamPattern].join("::")
+    : null;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || decisionHighlightKey === 0) {
+      return;
+    }
+
+    setDecisionHighlightActive(true);
+    const timeout = window.setTimeout(() => {
+      setDecisionHighlightActive(false);
+    }, 1700);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [decisionHighlightKey]);
 
   if (loading) {
     return <LoadingResults />;
@@ -169,6 +218,8 @@ export function ScanResults({
           title={result.riskLabelDisplay}
           eyebrow={copy.result.riskSummary}
           className="col-span-12 md:col-span-5"
+          highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:risk` : null}
+          highlightEnabled
         >
           <div className="space-y-5">
             <div className={`font-headline text-5xl font-extrabold tracking-editorial ${RiskAccent({ label: result.riskLabel })}`}>
@@ -200,11 +251,25 @@ export function ScanResults({
           </div>
         </ResultShell>
 
-        <ResultShell title={copy.result.recommendedActions} eyebrow={copy.result.whatToDoNext} className="col-span-12 md:col-span-7" delay={60}>
+        <ResultShell
+          title={copy.result.recommendedActions}
+          eyebrow={copy.result.whatToDoNext}
+          className="col-span-12 md:col-span-7"
+          delay={60}
+          highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:actions` : null}
+          highlightEnabled
+        >
           <RecommendedActionsCard actions={result.recommendedActions} />
         </ResultShell>
 
-        <ResultShell title={copy.result.keyFindings} eyebrow={copy.result.patternScan} className="col-span-12 md:col-span-6" delay={120}>
+        <ResultShell
+          title={copy.result.keyFindings}
+          eyebrow={copy.result.patternScan}
+          className="col-span-12 md:col-span-6"
+          delay={120}
+          highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:findings` : null}
+          highlightEnabled
+        >
           <div className="space-y-4">
             {result.topReasons.map((reason, index) => (
               <div key={reason} className="flex gap-4">
@@ -217,7 +282,12 @@ export function ScanResults({
           </div>
         </ResultShell>
 
-        <ResultShell title={copy.result.technicalDetails} eyebrow={copy.result.triggeredRules} className="col-span-12 md:col-span-6" delay={180}>
+        <ResultShell
+          title={copy.result.technicalDetails}
+          eyebrow={copy.result.triggeredRules}
+          className={`col-span-12 md:col-span-6 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+          delay={180}
+        >
           <div className="space-y-4">
             {result.technicalDetails.length > 0 ? (
               result.technicalDetails.map((detail) => (
@@ -239,13 +309,159 @@ export function ScanResults({
           </div>
         </ResultShell>
 
-        <ResultShell title={decisionCopy.titles.decisionTrace} eyebrow={decisionCopy.titles.consensusEngine} className="col-span-12 md:col-span-4" delay={210}>
-          <DecisionSummaryPanel result={result} />
-        </ResultShell>
+        {result.documentAnalysis ? (
+          <ResultShell
+            title="Document X-Ray"
+            eyebrow="Attachment Intelligence"
+            className="col-span-12"
+            delay={195}
+            highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:document-xray` : null}
+            highlightEnabled
+          >
+            <div className="space-y-5">
+              <div className="flex flex-wrap gap-2">
+                <DocumentBadge tone="secondary">{result.documentAnalysis.fileType}</DocumentBadge>
+                <DocumentBadge>{result.documentAnalysis.fileSizeDisplay}</DocumentBadge>
+                {result.documentAnalysis.pageCount !== null ? <DocumentBadge>{result.documentAnalysis.pageCount} Pages</DocumentBadge> : null}
+                {result.documentAnalysis.sectionCount !== null ? (
+                  <DocumentBadge>{result.documentAnalysis.sectionCount} Sections</DocumentBadge>
+                ) : null}
+                {result.documentAnalysis.protected ? <DocumentBadge tone="alert">Protected</DocumentBadge> : null}
+                {result.documentAnalysis.partialAnalysis ? <DocumentBadge>Partial Analysis</DocumentBadge> : null}
+                {result.documentAnalysis.imageBased ? <DocumentBadge>Image Based</DocumentBadge> : null}
+                {result.documentAnalysis.ocrFallbackUsed ? <DocumentBadge tone="secondary">OCR Fallback</DocumentBadge> : null}
+                {result.documentAnalysis.macroEnabled ? <DocumentBadge tone="alert">Macro Enabled</DocumentBadge> : null}
+              </div>
 
-        <ResultShell title={decisionCopy.titles.modelAssessments} eyebrow={decisionCopy.titles.crossModelReview} className="col-span-12 md:col-span-8" delay={225}>
-          <ModelAssessmentsPanel result={result} />
-        </ResultShell>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]">
+                <div className="ghost-border min-w-0 bg-surface-container-lowest/55 p-4">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">File</p>
+                  <p className="mt-2 text-sm font-semibold text-vellum break-words [overflow-wrap:anywhere]">
+                    {result.documentAnalysis.fileName}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-on-surface-variant break-words [overflow-wrap:anywhere]">
+                    {result.documentAnalysis.mediaType}
+                  </p>
+                </div>
+                <div className="ghost-border min-w-0 bg-surface-container-lowest/55 p-4">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Reader</p>
+                  <p className="mt-2 text-sm font-semibold text-vellum">{result.documentAnalysis.parser}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">
+                    {result.documentAnalysis.ocrFallbackUsed
+                      ? `Rendered-page OCR reviewed ${result.documentAnalysis.ocrPagesAnalyzed} page${result.documentAnalysis.ocrPagesAnalyzed === 1 ? "" : "s"}${result.documentAnalysis.ocrPageLimit ? ` (limit ${result.documentAnalysis.ocrPageLimit})` : ""}.`
+                      : result.documentAnalysis.inspectable
+                        ? "Deeper review completed."
+                        : "Only a limited review was possible for this file."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="ghost-border bg-primary-container/20 p-4">
+                <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Text Preview</p>
+                <p className="mt-3 max-w-4xl text-sm leading-relaxed text-on-surface-variant">
+                  {result.documentAnalysis.textPreview || "No readable text preview was available for this attachment."}
+                </p>
+              </div>
+            </div>
+          </ResultShell>
+        ) : null}
+
+        {result.documentAnalysis ? (
+          <ResultShell title="Links And Buttons" eyebrow="Where they lead" className="col-span-12" delay={205}>
+            <div className="grid gap-4 xl:grid-cols-2">
+              {result.documentAnalysis.linkPairs.length > 0 ? (
+                result.documentAnalysis.linkPairs.slice(0, 5).map((link, index) => (
+                  <div key={`${link.target_url ?? "link"}-${index}`} className="ghost-border min-w-0 bg-surface-container-lowest/55 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary break-words [overflow-wrap:anywhere]">
+                        {link.display_text?.trim() || `Link ${index + 1}`}
+                      </span>
+                      {link.display_target_mismatch ? <DocumentBadge tone="alert">Mismatch</DocumentBadge> : null}
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-on-surface break-words [overflow-wrap:anywhere]">
+                      {link.target_url?.trim() || "Unknown destination"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {link.registrable_domain ? <DocumentBadge>{link.registrable_domain}</DocumentBadge> : null}
+                      {link.is_call_to_action ? <DocumentBadge tone="secondary">CTA</DocumentBadge> : null}
+                      {link.is_shortened ? <DocumentBadge tone="alert">Shortened</DocumentBadge> : null}
+                      {link.is_raw_ip ? <DocumentBadge tone="alert">Raw IP</DocumentBadge> : null}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm leading-relaxed text-on-surface-variant">
+                  No embedded links were extracted from this document.
+                </p>
+              )}
+            </div>
+          </ResultShell>
+        ) : null}
+
+        {result.documentAnalysis && (result.documentAnalysis.qrPayloads.length > 0 || result.documentAnalysis.limitations.length > 0 || result.documentAnalysis.ocrFallbackUsed || result.documentAnalysis.macroEnabled) ? (
+          <ResultShell title="Evidence Notes" eyebrow="QR codes and review limits" className="col-span-12" delay={215}>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-4">
+                <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Review limits</p>
+                {result.documentAnalysis.ocrFallbackUsed ? (
+                  <div className="ghost-border bg-surface-container-lowest/55 p-4 text-sm leading-relaxed text-on-surface-variant">
+                    OCR fallback reviewed {result.documentAnalysis.ocrPagesAnalyzed} page{result.documentAnalysis.ocrPagesAnalyzed === 1 ? "" : "s"}
+                    {result.documentAnalysis.ocrPageLimit ? ` with a limit of ${result.documentAnalysis.ocrPageLimit}` : ""}.
+                  </div>
+                ) : null}
+                {result.documentAnalysis.macroEnabled ? (
+                  <div className="ghost-border bg-surface-container-lowest/55 p-4 text-sm leading-relaxed text-on-surface-variant">
+                    This file is macro-enabled. CyberCoach reviewed the visible content and destinations, but did not run any macros.
+                  </div>
+                ) : null}
+                {result.documentAnalysis.limitations.length > 0 ? (
+                  result.documentAnalysis.limitations.map((item) => (
+                    <div key={item} className="ghost-border bg-surface-container-lowest/55 p-4 text-sm leading-relaxed text-on-surface-variant">
+                      {item}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-on-surface-variant">No special review limits were reported.</p>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Detected QR destinations</p>
+                {result.documentAnalysis.qrPayloads.length > 0 ? (
+                  result.documentAnalysis.qrPayloads.map((payload) => (
+                    <div key={payload} className="ghost-border bg-surface-container-lowest/55 p-4 text-sm leading-relaxed text-on-surface break-words [overflow-wrap:anywhere]">
+                      {payload}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-on-surface-variant">No QR destinations were extracted from this document.</p>
+                )}
+              </div>
+            </div>
+          </ResultShell>
+        ) : null}
+
+        {showDecisionPanels ? (
+          <ResultShell
+            title={decisionCopy.titles.decisionTrace}
+            eyebrow={decisionCopy.titles.consensusEngine}
+            className={`col-span-12 md:col-span-4 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+            delay={210}
+          >
+            <DecisionSummaryPanel result={result} />
+          </ResultShell>
+        ) : null}
+
+        {showDecisionPanels ? (
+          <ResultShell
+            title={decisionCopy.titles.modelAssessments}
+            eyebrow={decisionCopy.titles.crossModelReview}
+            className={`col-span-12 md:col-span-8 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+            delay={225}
+          >
+            <ModelAssessmentsPanel result={result} />
+          </ResultShell>
+        ) : null}
 
         {result.urlEvidence.length > 0 ? (
           <ResultShell title={decisionCopy.titles.urlEvidence} eyebrow={decisionCopy.titles.domainIntelligence} className="col-span-12" delay={235}>

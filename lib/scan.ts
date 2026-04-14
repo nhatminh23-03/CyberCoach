@@ -105,8 +105,84 @@ export type BackendOcrMetadata = {
   reason?: string;
 };
 
+export type BackendDocumentLink = {
+  display_text?: string;
+  target_url?: string;
+  target_domain?: string;
+  registrable_domain?: string;
+  display_domain?: string | null;
+  claimed_entity?: string | null;
+  official_match?: boolean;
+  display_target_mismatch?: boolean;
+  is_call_to_action?: boolean;
+  is_shortened?: boolean;
+  is_raw_ip?: boolean;
+  suspicious_tld?: boolean;
+  subdomain_count?: number;
+};
+
+export type BackendDocumentMetadata = {
+  file_name?: string;
+  file_type?: string;
+  media_type?: string;
+  file_size?: number;
+  parser?: string;
+  inspectable?: boolean;
+  protected?: boolean;
+  partial_analysis?: boolean;
+  image_based?: boolean;
+  macro_enabled?: boolean;
+  page_count?: number | null;
+  section_count?: number | null;
+  image_count?: number;
+  text_truncated?: boolean;
+  text_preview?: string;
+  extracted_text?: string;
+  ocr_text?: string;
+  ocr_fallback_used?: boolean;
+  ocr_pages_analyzed?: number;
+  ocr_page_limit?: number;
+  extracted_urls?: string[];
+  link_pairs?: BackendDocumentLink[];
+  qr_payloads?: string[];
+  limitations?: string[];
+};
+
+export type BackendVoiceTranscriptSegment = {
+  text: string;
+  timestamp?: string;
+};
+
+export type BackendVoiceMetadata = {
+  session_id?: string;
+  analysis_state?: "live" | "final" | string;
+  started_at?: string;
+  updated_at?: string;
+  elapsed_seconds?: number;
+  transcript_text?: string;
+  transcript_segments?: BackendVoiceTranscriptSegment[];
+  transcript_word_count?: number;
+  challenge_questions?: string[];
+  live_warnings?: string[];
+  voice_signals?: BackendHeuristicFinding[];
+  listening_mode?: string;
+  source_file_name?: string;
+  source_file_size?: number;
+  source_media_type?: string;
+  transcription_source?: string;
+  transcription_model?: string;
+  limitations?: string[];
+  live_ai_state?: "heuristics_live_only" | "ai_live_pending" | "ai_live_active" | "ai_live_unavailable" | "final_ai_reviewed" | string;
+  live_ai_summary?: string;
+  live_ai_reasons?: string[];
+  live_ai_confidence?: string | null;
+  live_ai_last_updated_at?: string;
+  live_ai_attempted?: boolean;
+  live_ai_action?: string | null;
+};
+
 export type BackendScanResponse = {
-  scan_type: "message" | "url" | "screenshot";
+  scan_type: "message" | "url" | "screenshot" | "document" | "voice";
   risk_label: "Safe" | "Suspicious" | "High Risk";
   risk_score: number;
   confidence: "Low" | "Medium" | "High";
@@ -133,6 +209,8 @@ export type BackendScanResponse = {
     evidence_buckets?: BackendEvidenceBucket[];
     model_errors?: BackendModelError[];
     ocr?: BackendOcrMetadata;
+    document?: BackendDocumentMetadata;
+    voice?: BackendVoiceMetadata;
     [key: string]: unknown;
   };
 };
@@ -148,6 +226,33 @@ export type TechnicalDetailItem = {
   label: string;
   detail: string;
   severity: "high" | "medium" | "low";
+};
+
+export type DocumentAnalysisResult = {
+  fileName: string;
+  fileType: string;
+  mediaType: string;
+  fileSize: number;
+  fileSizeDisplay: string;
+  parser: string;
+  inspectable: boolean;
+  protected: boolean;
+  partialAnalysis: boolean;
+  imageBased: boolean;
+  macroEnabled: boolean;
+  pageCount: number | null;
+  sectionCount: number | null;
+  imageCount: number;
+  textPreview: string;
+  extractedText: string;
+  ocrText: string;
+  ocrFallbackUsed: boolean;
+  ocrPagesAnalyzed: number;
+  ocrPageLimit: number;
+  extractedUrls: string[];
+  linkPairs: BackendDocumentLink[];
+  qrPayloads: string[];
+  limitations: string[];
 };
 
 export type MessageScanResult = {
@@ -190,6 +295,34 @@ export type MessageScanResult = {
     qrPayloads: string[];
     qrDetected: boolean;
     overrideUsed: boolean;
+  } | null;
+  documentAnalysis: DocumentAnalysisResult | null;
+  voiceAnalysis: {
+    sessionId: string;
+    analysisState: string;
+    startedAt: string | null;
+    updatedAt: string | null;
+    elapsedSeconds: number;
+    transcriptText: string;
+    transcriptSegments: BackendVoiceTranscriptSegment[];
+    transcriptWordCount: number;
+    challengeQuestions: string[];
+    liveWarnings: string[];
+    voiceSignals: BackendHeuristicFinding[];
+    listeningMode: string | null;
+    sourceFileName: string | null;
+    sourceFileSize: number | null;
+    sourceMediaType: string | null;
+    transcriptionSource: string | null;
+    transcriptionModel: string | null;
+    limitations: string[];
+    liveAiState: string;
+    liveAiSummary: string;
+    liveAiReasons: string[];
+    liveAiConfidence: string | null;
+    liveAiLastUpdatedAt: string | null;
+    liveAiAttempted: boolean;
+    liveAiAction: string | null;
   } | null;
   locale: SupportedLocale;
   privacyModeEnabled: boolean;
@@ -294,6 +427,31 @@ export type ScanCapabilities = {
   screenshotRequiresApiKey: boolean;
   llmProvider: string | null;
   llmModel: string | null;
+  voiceLiveBrowserMode?: boolean;
+  voiceLiveStreamingAvailable?: boolean;
+  voiceRecordingUploadAvailable?: boolean;
+  voiceRecordingAutoTranscriptionAvailable?: boolean;
+};
+
+export type VoiceSessionBootstrap = {
+  session_id: string;
+  status: string;
+  language: string;
+  privacy_mode: boolean;
+  started_at: string;
+  challenge_questions: string[];
+  limitations: string[];
+};
+
+export type VoiceSignalInput = {
+  type: string;
+  detail: string;
+  severity: "high" | "medium" | "low";
+};
+
+export type VoiceTranscriptSegmentInput = {
+  text: string;
+  timestamp: string;
 };
 
 type ScanLocaleCopy = {
@@ -361,6 +519,29 @@ type ScanLocaleCopy = {
 };
 
 const API_BASE_URL = "/api";
+const DEFAULT_DIRECT_BACKEND_API_BASE = "http://127.0.0.1:8000/api";
+
+function getDirectBackendApiBase() {
+  if (typeof window !== "undefined") {
+    const configured = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (configured?.trim()) {
+      return configured.trim();
+    }
+
+    const host = window.location.hostname || "127.0.0.1";
+    if (host === "localhost" || host === "127.0.0.1") {
+      const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+      return `${protocol}//${host}:8000/api`;
+    }
+  }
+
+  return process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_DIRECT_BACKEND_API_BASE;
+}
+
+export function getVoiceRealtimeSocketUrl() {
+  const base = getDirectBackendApiBase().replace(/\/$/, "");
+  return base.replace(/^http:/i, "ws:").replace(/^https:/i, "wss:") + "/scan/voice/ws";
+}
 
 const FALLBACK_MESSAGE_SAMPLES: MessageSamplesResponse = {
   presets: [
@@ -419,27 +600,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "Risk Summary",
       heuristicScore: "Heuristic score",
       confidence: "Confidence",
-      likelyPattern: "Likely Pattern",
+      likelyPattern: "Main concern",
       recommendedActions: "Recommended Actions",
       whatToDoNext: "What To Do Next",
       keyFindings: "Key Findings",
-      patternScan: "Pattern Scan",
-      technicalDetails: "Technical Details",
-      triggeredRules: "Triggered Rules",
-      noTriggeredRules: "No triggered technical rules were returned for this message.",
+      patternScan: "Why this was flagged",
+      technicalDetails: "Scan Details",
+      triggeredRules: "Technical reasons",
+      noTriggeredRules: "CyberCoach did not add extra technical reasons for this result.",
       privacyNoteTitle: "Privacy Note",
-      protectedReview: "Protected Review",
+      protectedReview: "Privacy First",
       quickTip: "Quick Tip",
-      educationalGuidance: "Educational Guidance",
-      riskScoreBreakdown: "Risk Score Breakdown",
-      advancedReview: "Advanced Review",
-      scoreDetails: "Score Details",
-      scoreDetailsDescription: "Review how the local heuristics contributed to the overall risk score.",
+      educationalGuidance: "Keep In Mind",
+      riskScoreBreakdown: "How the score was built",
+      advancedReview: "Scoring Details",
+      scoreDetails: "View score details",
+      scoreDetailsDescription: "See which signals added to the overall risk score.",
       collapse: "Collapse",
       expand: "Expand",
-      noDetailedBreakdown: "No detailed heuristic breakdown is available for this result.",
+      noDetailedBreakdown: "No detailed scoring breakdown is available for this result.",
       reportActions: "Report Actions",
-      forwardOrArchive: "Forward Or Archive",
+      forwardOrArchive: "Save Or Share",
       copyReport: "Copy Report",
       copying: "Copying...",
       downloadTxt: "Download TXT",
@@ -448,7 +629,7 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
     },
     riskLabels: { Safe: "Safe", Suspicious: "Suspicious", "High Risk": "High Risk" },
     confidenceLabels: { Low: "Low", Medium: "Medium", High: "High" },
-    providerLabels: { heuristic: "Heuristic Engine", openrouter: "OpenRouter", anthropic: "Anthropic" },
+    providerLabels: { heuristic: "Local Review", openrouter: "AI Review (OpenRouter)", anthropic: "AI Review (Anthropic)" },
     privacy: {
       redacted: (count) => `${count} piece${count === 1 ? "" : "s"} of personal info ${count === 1 ? "was" : "were"} redacted before analysis`,
       enabledNoRedaction: "Privacy mode was enabled. No personal details needed redaction before analysis."
@@ -461,33 +642,63 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       default: "If a message feels emotionally loaded, urgent, or unusually personal, that is often the moment to verify it through a safer channel."
     },
     findingTypes: {
-      domain_mismatch: "Domain Mismatch",
-      suspicious_tld: "Suspicious TLD",
-      urgency: "Urgency",
-      credential_ask: "Credential Ask",
-      sender_spoof: "Sender Spoof",
-      homoglyph: "Homoglyph",
-      shortened_url: "Shortened URL",
-      ip_address_url: "IP Address URL",
-      excessive_subdomains: "Excessive Subdomains",
-      phishtank_match: "PhishTank Match",
-      cross_domain_redirect: "Cross-Domain Redirect",
-      multi_hop_redirect: "Multi-Hop Redirect",
-      meta_refresh_redirect: "Meta Refresh Redirect",
-      external_form_action: "External Form Action",
-      insecure_destination: "Insecure Destination",
-      login_form: "Login Form On Destination",
-      page_brand_impersonation: "Page Brand Impersonation",
-      credential_lure_page: "Credential Lure Page",
-      qr_account_lure: "QR Account Lure",
-      visual_mobile_message_ui: "Mobile Message UI",
-      visual_delivery_notice_ui: "Delivery Notice UI",
-      visual_payment_request_ui: "Payment Request UI",
-      visual_credential_prompt: "Credential Prompt UI",
-      visual_system_alert_ui: "System Alert UI",
-      visual_account_security_ui: "Account Security UI",
-      visual_urgent_cta: "Urgent Action UI",
-      visual_brand_impersonation: "Brand Impersonation UI",
+      domain_mismatch: "Brand name and link do not match",
+      suspicious_tld: "Unusual website ending",
+      urgency: "Pressure to act quickly",
+      credential_ask: "Asks for passwords or codes",
+      sender_spoof: "Sender may be impersonated",
+      homoglyph: "Lookalike letters in the link",
+      shortened_url: "Shortened link hides the destination",
+      ip_address_url: "Link uses a raw IP address",
+      excessive_subdomains: "Unusually deep subdomains",
+      phishtank_match: "Known phishing link",
+      cross_domain_redirect: "Redirects to another site",
+      multi_hop_redirect: "Multiple redirects",
+      meta_refresh_redirect: "Page tries to redirect automatically",
+      external_form_action: "Form sends data to another site",
+      insecure_destination: "Destination is not secure",
+      login_form: "Login form on the destination page",
+      page_brand_impersonation: "Destination looks like brand impersonation",
+      credential_lure_page: "Destination tries to collect sign-in details",
+      document_macro_enabled: "Document can run macros",
+      qr_account_lure: "QR code pushes you to sign in",
+      visual_mobile_message_ui: "Looks like a mobile message",
+      visual_delivery_notice_ui: "Looks like a delivery notice",
+      visual_payment_request_ui: "Looks like a payment request",
+      visual_credential_prompt: "Looks like a sign-in prompt",
+      visual_partial_login_ui: "Looks like an incomplete login screen",
+      visual_system_alert_ui: "Looks like a system warning",
+      visual_account_security_ui: "Looks like an account security alert",
+      visual_browser_chrome_ui: "Looks like a browser or address bar",
+      visual_banking_app_ui: "Looks like a banking or payment app",
+      visual_notification_banner_ui: "Looks like a notification prompt",
+      visual_cropped_context_ui: "Important context may be cropped out",
+      destination_lookup_blocked: "Destination check was blocked",
+      destination_lookup_unavailable: "Destination check was unavailable",
+      destination_lookup_timeout: "Destination check timed out",
+      destination_lookup_unresolved: "Destination could not be reached",
+      visual_urgent_cta: "Looks like an urgent action button",
+      visual_brand_impersonation: "Looks like brand impersonation",
+      official_entity_impersonation: "Pretends to be a trusted organization",
+      subdomain_impersonation: "Subdomain is trying to look official",
+      legal_threat: "Threatens penalties or legal action",
+      deadline_conflict: "Uses a suspicious deadline",
+      invoice_payment_pressure: "Pressures you about payment or invoices",
+      document_protected: "Document could not be fully opened",
+      document_deceptive_cta: "Document uses a misleading button or prompt",
+      document_link_mismatch: "Document text and link destination do not match",
+      document_qr_payload: "Document includes a risky QR destination",
+      document_image_only: "Document is image-based, so review is limited",
+      document_partial_analysis: "Document review was only partial",
+      voice_family_emergency: "Uses a family emergency story",
+      voice_bank_impersonation: "Pretends to be from a bank or card issuer",
+      voice_government_impersonation: "Pretends to be from a government office",
+      voice_payment_request: "Asks for money or urgent payment",
+      voice_otp_request: "Asks for a one-time code",
+      voice_secrecy_pressure: "Tells you to keep the call secret",
+      voice_call_control: "Tries to keep you on the line or control the call",
+      voice_pattern_suspicious: "Voice patterns feel unusual",
+      voice_audio_quality_limited: "Audio quality makes the call harder to judge",
       signal: "Signal"
     },
     report: {
@@ -507,27 +718,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "Resumen de Riesgo",
       heuristicScore: "Puntuacion heuristica",
       confidence: "Confianza",
-      likelyPattern: "Patron Probable",
+      likelyPattern: "Principal preocupacion",
       recommendedActions: "Acciones Recomendadas",
       whatToDoNext: "Que Hacer Ahora",
       keyFindings: "Hallazgos Clave",
-      patternScan: "Escaneo de Patrones",
-      technicalDetails: "Detalles Tecnicos",
-      triggeredRules: "Reglas Activadas",
-      noTriggeredRules: "No se devolvieron reglas tecnicas activadas para este mensaje.",
+      patternScan: "Por que se marco",
+      technicalDetails: "Detalles del Analisis",
+      triggeredRules: "Motivos tecnicos",
+      noTriggeredRules: "CyberCoach no agrego motivos tecnicos adicionales para este resultado.",
       privacyNoteTitle: "Nota de Privacidad",
-      protectedReview: "Revision Protegida",
+      protectedReview: "Privacidad Primero",
       quickTip: "Consejo Rapido",
-      educationalGuidance: "Guia Educativa",
-      riskScoreBreakdown: "Desglose del Puntaje de Riesgo",
-      advancedReview: "Revision Avanzada",
-      scoreDetails: "Detalles del Puntaje",
-      scoreDetailsDescription: "Revisa como las heuristicas locales aportaron al puntaje total de riesgo.",
+      educationalGuidance: "Tenlo en cuenta",
+      riskScoreBreakdown: "Como se calculo el puntaje",
+      advancedReview: "Detalle del Puntaje",
+      scoreDetails: "Ver detalle del puntaje",
+      scoreDetailsDescription: "Mira que senales elevaron el puntaje de riesgo.",
       collapse: "Ocultar",
       expand: "Expandir",
-      noDetailedBreakdown: "No hay un desglose heuristico detallado disponible para este resultado.",
+      noDetailedBreakdown: "No hay un desglose detallado del puntaje para este resultado.",
       reportActions: "Acciones del Informe",
-      forwardOrArchive: "Compartir o Archivar",
+      forwardOrArchive: "Guardar o Compartir",
       copyReport: "Copiar Informe",
       copying: "Copiando...",
       downloadTxt: "Descargar TXT",
@@ -595,27 +806,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "风险摘要",
       heuristicScore: "启发式分数",
       confidence: "置信度",
-      likelyPattern: "可能模式",
+      likelyPattern: "主要顾虑",
       recommendedActions: "建议操作",
       whatToDoNext: "下一步怎么做",
       keyFindings: "关键发现",
-      patternScan: "模式扫描",
-      technicalDetails: "技术细节",
-      triggeredRules: "触发规则",
-      noTriggeredRules: "此消息没有返回任何触发的技术规则。",
+      patternScan: "为什么会被标记",
+      technicalDetails: "扫描细节",
+      triggeredRules: "技术原因",
+      noTriggeredRules: "CyberCoach 没有为这个结果补充额外的技术原因。",
       privacyNoteTitle: "隐私说明",
-      protectedReview: "受保护审查",
+      protectedReview: "隐私优先",
       quickTip: "快速提示",
-      educationalGuidance: "教育指导",
-      riskScoreBreakdown: "风险分数明细",
-      advancedReview: "高级审查",
-      scoreDetails: "分数详情",
-      scoreDetailsDescription: "查看本地启发式规则如何影响总体风险分数。",
+      educationalGuidance: "提醒",
+      riskScoreBreakdown: "分数是如何形成的",
+      advancedReview: "分数细节",
+      scoreDetails: "查看分数细节",
+      scoreDetailsDescription: "查看哪些信号提高了风险分数。",
       collapse: "收起",
       expand: "展开",
-      noDetailedBreakdown: "此结果没有可用的详细启发式分数明细。",
+      noDetailedBreakdown: "此结果没有更详细的分数拆解。",
       reportActions: "报告操作",
-      forwardOrArchive: "转发或归档",
+      forwardOrArchive: "保存或分享",
       copyReport: "复制报告",
       copying: "复制中...",
       downloadTxt: "下载 TXT",
@@ -683,27 +894,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "Tom Tat Rui Ro",
       heuristicScore: "Diem heuristic",
       confidence: "Do tin cay",
-      likelyPattern: "Kieu co kha nang",
+      likelyPattern: "Moi lo chinh",
       recommendedActions: "Hanh Dong De Xuat",
       whatToDoNext: "Can Lam Gi Tiep Theo",
       keyFindings: "Phat Hien Chinh",
-      patternScan: "Quet Mau",
-      technicalDetails: "Chi Tiet Ky Thuat",
-      triggeredRules: "Quy Tac Da Kich Hoat",
-      noTriggeredRules: "Khong co quy tac ky thuat nao duoc kich hoat cho tin nhan nay.",
+      patternScan: "Vi sao bi danh dau",
+      technicalDetails: "Chi Tiet Ban Quet",
+      triggeredRules: "Ly do ky thuat",
+      noTriggeredRules: "CyberCoach khong bo sung ly do ky thuat nao cho ket qua nay.",
       privacyNoteTitle: "Ghi Chu Rieng Tu",
-      protectedReview: "Danh Gia Duoc Bao Ve",
+      protectedReview: "Uu Tien Rieng Tu",
       quickTip: "Meo Nhanh",
-      educationalGuidance: "Huong Dan Giao Duc",
-      riskScoreBreakdown: "Phan Tich Diem Rui Ro",
-      advancedReview: "Danh Gia Nang Cao",
-      scoreDetails: "Chi Tiet Diem",
-      scoreDetailsDescription: "Xem cac heuristic cuc bo da dong gop vao tong diem rui ro nhu the nao.",
+      educationalGuidance: "Can nho",
+      riskScoreBreakdown: "Diem duoc tao ra nhu the nao",
+      advancedReview: "Chi tiet diem",
+      scoreDetails: "Xem chi tiet diem",
+      scoreDetailsDescription: "Xem tin hieu nao da lam tang diem rui ro.",
       collapse: "Thu Gon",
       expand: "Mo Rong",
-      noDetailedBreakdown: "Khong co phan tich heuristic chi tiet cho ket qua nay.",
+      noDetailedBreakdown: "Khong co bang giai thich diem chi tiet cho ket qua nay.",
       reportActions: "Tac Vu Bao Cao",
-      forwardOrArchive: "Chuyen Tiep Hoac Luu Tru",
+      forwardOrArchive: "Luu Hoac Chia Se",
       copyReport: "Sao Chep Bao Cao",
       copying: "Dang sao chep...",
       downloadTxt: "Tai TXT",
@@ -771,27 +982,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "위험 요약",
       heuristicScore: "휴리스틱 점수",
       confidence: "신뢰도",
-      likelyPattern: "가능한 유형",
+      likelyPattern: "주요 우려",
       recommendedActions: "권장 조치",
       whatToDoNext: "다음 단계",
       keyFindings: "핵심 발견",
-      patternScan: "패턴 스캔",
-      technicalDetails: "기술 세부사항",
-      triggeredRules: "트리거된 규칙",
-      noTriggeredRules: "이 메시지에 대해 반환된 기술 규칙이 없습니다.",
+      patternScan: "왜 표시되었는지",
+      technicalDetails: "검토 세부사항",
+      triggeredRules: "기술적 이유",
+      noTriggeredRules: "이 결과에 대해 추가된 기술적 이유는 없습니다.",
       privacyNoteTitle: "개인정보 메모",
-      protectedReview: "보호된 검토",
+      protectedReview: "개인정보 우선",
       quickTip: "빠른 팁",
-      educationalGuidance: "안내 정보",
-      riskScoreBreakdown: "위험 점수 분석",
-      advancedReview: "고급 검토",
-      scoreDetails: "점수 세부정보",
-      scoreDetailsDescription: "로컬 휴리스틱이 전체 위험 점수에 어떻게 기여했는지 확인하세요.",
+      educationalGuidance: "기억해 둘 점",
+      riskScoreBreakdown: "점수가 만들어진 방식",
+      advancedReview: "점수 세부정보",
+      scoreDetails: "점수 자세히 보기",
+      scoreDetailsDescription: "어떤 신호가 위험 점수를 올렸는지 확인하세요.",
       collapse: "접기",
       expand: "펼치기",
-      noDetailedBreakdown: "이 결과에 사용할 수 있는 상세 휴리스틱 분석이 없습니다.",
+      noDetailedBreakdown: "이 결과에 대한 자세한 점수 설명은 없습니다.",
       reportActions: "보고서 작업",
-      forwardOrArchive: "전달 또는 보관",
+      forwardOrArchive: "저장 또는 공유",
       copyReport: "보고서 복사",
       copying: "복사 중...",
       downloadTxt: "TXT 다운로드",
@@ -859,27 +1070,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "Buod ng Panganib",
       heuristicScore: "Heuristic na puntos",
       confidence: "Kumpiyansa",
-      likelyPattern: "Posibleng Uri",
+      likelyPattern: "Pangunahing alalahanin",
       recommendedActions: "Mga Inirerekomendang Aksyon",
       whatToDoNext: "Ano ang Susunod na Gagawin",
       keyFindings: "Mahahalagang Natuklasan",
-      patternScan: "Pattern Scan",
-      technicalDetails: "Teknikal na Detalye",
-      triggeredRules: "Mga Na-trigger na Rule",
-      noTriggeredRules: "Walang naibalik na teknikal na rule para sa mensaheng ito.",
+      patternScan: "Bakit ito na-flag",
+      technicalDetails: "Mga Detalye ng Scan",
+      triggeredRules: "Mga teknikal na dahilan",
+      noTriggeredRules: "Walang dagdag na teknikal na dahilan para sa resultang ito.",
       privacyNoteTitle: "Tala sa Privacy",
-      protectedReview: "Protektadong Pagsusuri",
+      protectedReview: "Unahin ang Privacy",
       quickTip: "Mabilis na Paalala",
-      educationalGuidance: "Gabay Pang-edukasyon",
-      riskScoreBreakdown: "Pagkakahati ng Risk Score",
-      advancedReview: "Mas Malalim na Pagsusuri",
-      scoreDetails: "Detalye ng Score",
-      scoreDetailsDescription: "Tingnan kung paano nakaambag ang mga lokal na heuristic sa kabuuang risk score.",
+      educationalGuidance: "Dapat tandaan",
+      riskScoreBreakdown: "Paano nabuo ang score",
+      advancedReview: "Detalye ng Score",
+      scoreDetails: "Tingnan ang detalye ng score",
+      scoreDetailsDescription: "Tingnan kung aling mga signal ang nagdagdag sa risk score.",
       collapse: "Isara",
       expand: "Buksan",
-      noDetailedBreakdown: "Walang detalyadong heuristic breakdown para sa resultang ito.",
+      noDetailedBreakdown: "Walang mas detalyadong paliwanag ng score para sa resultang ito.",
       reportActions: "Mga Aksyon sa Ulat",
-      forwardOrArchive: "Ipasa o I-archive",
+      forwardOrArchive: "I-save o Ibahagi",
       copyReport: "Kopyahin ang Ulat",
       copying: "Kinokopya...",
       downloadTxt: "I-download ang TXT",
@@ -947,27 +1158,27 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
       riskSummary: "Resume du Risque",
       heuristicScore: "Score heuristique",
       confidence: "Confiance",
-      likelyPattern: "Type Probable",
+      likelyPattern: "Principal point d'attention",
       recommendedActions: "Actions Recommandees",
       whatToDoNext: "Que Faire Ensuite",
       keyFindings: "Constats Cles",
-      patternScan: "Analyse de Motifs",
-      technicalDetails: "Details Techniques",
-      triggeredRules: "Regles Declenchees",
-      noTriggeredRules: "Aucune regle technique n'a ete retournee pour ce message.",
+      patternScan: "Pourquoi cela a ete signale",
+      technicalDetails: "Details de l'Analyse",
+      triggeredRules: "Raisons techniques",
+      noTriggeredRules: "CyberCoach n'a pas ajoute de raison technique supplementaire pour ce resultat.",
       privacyNoteTitle: "Note de Confidentialite",
-      protectedReview: "Revision Protegee",
+      protectedReview: "Confidentialite d'Abord",
       quickTip: "Conseil Rapide",
-      educationalGuidance: "Conseil Educatif",
-      riskScoreBreakdown: "Detail du Score de Risque",
-      advancedReview: "Revision Avancee",
-      scoreDetails: "Details du Score",
-      scoreDetailsDescription: "Voyez comment les heuristiques locales ont contribue au score global de risque.",
+      educationalGuidance: "A retenir",
+      riskScoreBreakdown: "Comment le score a ete calcule",
+      advancedReview: "Details du score",
+      scoreDetails: "Voir le detail du score",
+      scoreDetailsDescription: "Voyez quels signaux ont augmente le score de risque.",
       collapse: "Reduire",
       expand: "Developper",
-      noDetailedBreakdown: "Aucun detail heuristique n'est disponible pour ce resultat.",
+      noDetailedBreakdown: "Aucun detail supplementaire sur le score n'est disponible pour ce resultat.",
       reportActions: "Actions du Rapport",
-      forwardOrArchive: "Transmettre ou Archiver",
+      forwardOrArchive: "Enregistrer ou Partager",
       copyReport: "Copier le Rapport",
       copying: "Copie...",
       downloadTxt: "Telecharger TXT",
@@ -1072,6 +1283,19 @@ function severityPoints(severity: TechnicalDetailItem["severity"]) {
   return 1;
 }
 
+function formatBytes(size: number) {
+  if (!Number.isFinite(size) || size <= 0) {
+    return "0 B";
+  }
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function modelRiskLabel(riskLevel: BackendModelRun["risk_level"]): BackendScanResponse["risk_label"] {
   if (riskLevel === "high_risk") {
     return "High Risk";
@@ -1118,6 +1342,60 @@ function ocrConfidenceDisplay(locale: SupportedLocale, confidence: number | null
   return SCAN_COPY[locale].confidenceLabels.Low;
 }
 
+function classifyInspectionIssue(
+  inspection: BackendUrlInspection
+): { type: string; detail: string; severity: "medium" | "low" } | null {
+  if (inspection.inspection_succeeded) {
+    return null;
+  }
+
+  if (inspection.blocked_reason) {
+    return {
+      type: "destination_lookup_blocked",
+      detail: `CyberCoach blocked the live destination lookup before opening the page. Technical note: ${inspection.blocked_reason}`,
+      severity: "medium"
+    };
+  }
+
+  const rawError = String(inspection.error ?? "").trim();
+  if (!rawError) {
+    return {
+      type: "destination_lookup_unavailable",
+      detail: "CyberCoach could not complete the live destination lookup from the current backend environment.",
+      severity: "low"
+    };
+  }
+
+  const normalizedError = rawError.toLowerCase();
+  if (normalizedError.includes("timed out") || normalizedError.includes("timeout")) {
+    return {
+      type: "destination_lookup_timeout",
+      detail: `CyberCoach started the live destination lookup, but it timed out before the page could be reviewed. Technical note: ${rawError}`,
+      severity: "medium"
+    };
+  }
+
+  if (
+    normalizedError.includes("name or service not known") ||
+    normalizedError.includes("temporary failure in name resolution") ||
+    normalizedError.includes("nodename nor servname provided") ||
+    normalizedError.includes("no address associated with hostname") ||
+    normalizedError.includes("failed to resolve")
+  ) {
+    return {
+      type: "destination_lookup_unresolved",
+      detail: `CyberCoach could not resolve the destination hostname from the current backend environment. Technical note: ${rawError}`,
+      severity: "medium"
+    };
+  }
+
+  return {
+    type: "destination_lookup_unavailable",
+    detail: `CyberCoach could not complete the live destination lookup from the current backend environment. Technical note: ${rawError}`,
+    severity: "low"
+  };
+}
+
 function pickQuickTip(findings: BackendHeuristicFinding[], locale: SupportedLocale) {
   const types = findings.map((finding) => finding.type);
   const tips = SCAN_COPY[locale].tips;
@@ -1126,22 +1404,27 @@ function pickQuickTip(findings: BackendHeuristicFinding[], locale: SupportedLoca
     types.includes("subdomain_impersonation") ||
     types.includes("legal_threat") ||
     types.includes("page_brand_impersonation") ||
-    types.includes("cross_domain_redirect")
+    types.includes("cross_domain_redirect") ||
+    types.includes("document_macro_enabled") ||
+    types.includes("document_deceptive_cta") ||
+    types.includes("document_link_mismatch")
   ) {
     return tips.direct;
   }
-  if (types.includes("urgency")) {
+  if (types.includes("urgency") || types.includes("invoice_payment_pressure")) {
     return tips.urgency;
   }
   if (
     types.includes("domain_mismatch") ||
     types.includes("suspicious_tld") ||
     types.includes("shortened_url") ||
-    types.includes("homoglyph")
+    types.includes("homoglyph") ||
+    types.includes("document_qr_payload") ||
+    types.includes("document_image_only")
   ) {
     return tips.domain;
   }
-  if (types.includes("credential_ask") || types.includes("sender_spoof")) {
+  if (types.includes("credential_ask") || types.includes("sender_spoof") || types.includes("document_protected")) {
     return tips.credentials;
   }
   if (types.length > 0) {
@@ -1167,15 +1450,29 @@ function primaryFinding(findings: BackendHeuristicFinding[]) {
     phishtank_match: 100,
     official_entity_impersonation: 95,
     page_brand_impersonation: 94,
+    document_protected: 93,
+    document_macro_enabled: 93,
+    document_link_mismatch: 92,
+    voice_family_emergency: 91,
     subdomain_impersonation: 90,
+    voice_bank_impersonation: 90,
+    voice_government_impersonation: 89,
     homoglyph: 88,
+    document_deceptive_cta: 87,
+    voice_payment_request: 86,
     domain_mismatch: 85,
+    voice_secrecy_pressure: 84,
     cross_domain_redirect: 84,
+    voice_otp_request: 83,
     external_form_action: 83,
+    voice_call_control: 82,
     login_form: 82,
     legal_threat: 80,
+    invoice_payment_pressure: 79,
     qr_account_lure: 79,
+    voice_pattern_suspicious: 78,
     credential_ask: 75,
+    document_qr_payload: 74,
     meta_refresh_redirect: 73,
     suspicious_tld: 70,
     insecure_destination: 69,
@@ -1183,14 +1480,22 @@ function primaryFinding(findings: BackendHeuristicFinding[]) {
     credential_lure_page: 67,
     urgency: 65,
     deadline_conflict: 60,
+    document_image_only: 59,
+    document_partial_analysis: 58,
     visual_brand_impersonation: 58,
     visual_credential_prompt: 57,
     visual_payment_request_ui: 56,
+    visual_partial_login_ui: 56,
     visual_account_security_ui: 55,
+    visual_notification_banner_ui: 55,
     visual_delivery_notice_ui: 54,
     visual_system_alert_ui: 53,
+    visual_browser_chrome_ui: 53,
+    visual_banking_app_ui: 52,
+    visual_cropped_context_ui: 52,
     visual_urgent_cta: 52,
-    visual_mobile_message_ui: 51
+    visual_mobile_message_ui: 51,
+    voice_audio_quality_limited: 50
   };
 
   return findings.reduce((best, current) => {
@@ -1215,6 +1520,14 @@ export function adaptMessageScanResult(
 ): MessageScanResult {
   const locale = normalizeLocale(options.locale);
   const heuristicFindings = payload.metadata?.heuristic_findings ?? [];
+  const inspectionIssueDetails = (payload.metadata?.url_live_inspection ?? [])
+    .map((inspection) => classifyInspectionIssue(inspection))
+    .filter((item): item is NonNullable<ReturnType<typeof classifyInspectionIssue>> => Boolean(item))
+    .map((item) => ({
+      label: localizedFindingType(item.type, locale),
+      detail: item.detail,
+      severity: item.severity
+    }));
   const technicalDetails = heuristicFindings.length
     ? heuristicFindings.map((finding) => ({
         label: localizedFindingType(finding.type, locale),
@@ -1226,6 +1539,7 @@ export function adaptMessageScanResult(
         detail: signal,
         severity: "medium" as const
       }));
+  technicalDetails.push(...inspectionIssueDetails);
 
   const groupedBreakdown = new Map<string, ScoreBreakdownItem>();
   for (const finding of heuristicFindings) {
@@ -1251,6 +1565,7 @@ export function adaptMessageScanResult(
   const urlInspection = payload.metadata?.url_live_inspection ?? [];
   const evidenceBuckets = payload.metadata?.evidence_buckets ?? [];
   const ocr = payload.metadata?.ocr;
+  const document = payload.metadata?.document;
   const screenshotOcr =
     payload.scan_type === "screenshot"
       ? {
@@ -1286,6 +1601,95 @@ export function adaptMessageScanResult(
           overrideUsed: Boolean(ocr?.ocr_override_used)
         }
       : null;
+  const documentAnalysis =
+    payload.scan_type === "document"
+      ? (() => {
+          const qrPayloads = Array.isArray(document?.qr_payloads) ? document.qr_payloads.map((item) => String(item)) : [];
+          const limitations = Array.isArray(document?.limitations) ? document.limitations.map((item) => String(item)) : [];
+
+          return {
+          fileName: String(document?.file_name ?? "uploaded-document"),
+          fileType: String(document?.file_type ?? "document").toUpperCase(),
+          mediaType: String(document?.media_type ?? "application/octet-stream"),
+          fileSize: typeof document?.file_size === "number" ? document.file_size : 0,
+          fileSizeDisplay: formatBytes(typeof document?.file_size === "number" ? document.file_size : 0),
+          parser: String(document?.parser ?? "document-parser"),
+          inspectable: document?.inspectable !== false,
+          protected: Boolean(document?.protected),
+          partialAnalysis: Boolean(document?.partial_analysis),
+          imageBased: Boolean(document?.image_based),
+          macroEnabled: Boolean(document?.macro_enabled),
+          pageCount: typeof document?.page_count === "number" ? document.page_count : null,
+          sectionCount: typeof document?.section_count === "number" ? document.section_count : null,
+          imageCount: typeof document?.image_count === "number" ? document.image_count : 0,
+          textPreview: String(document?.text_preview ?? ""),
+          extractedText: String(document?.extracted_text ?? ""),
+          ocrText: String(document?.ocr_text ?? ""),
+          ocrFallbackUsed: Boolean(document?.ocr_fallback_used),
+          ocrPagesAnalyzed: typeof document?.ocr_pages_analyzed === "number" ? document.ocr_pages_analyzed : 0,
+          ocrPageLimit: typeof document?.ocr_page_limit === "number" ? document.ocr_page_limit : 0,
+          extractedUrls: Array.isArray(document?.extracted_urls) ? document.extracted_urls.map((item) => String(item)) : [],
+          linkPairs: Array.isArray(document?.link_pairs)
+            ? document.link_pairs.filter(
+                (item): item is BackendDocumentLink => Boolean(item && typeof item === "object")
+              )
+            : [],
+          qrPayloads,
+          limitations: qrPayloads.length
+            ? limitations.filter((item) => !item.toLowerCase().includes("qr-code inspection support is unavailable"))
+            : limitations
+        };
+      })()
+      : null;
+  const voice = payload.metadata?.voice;
+  const voiceAnalysis =
+    payload.scan_type === "voice"
+      ? {
+          sessionId: String(voice?.session_id ?? "voice-session"),
+          analysisState: String(voice?.analysis_state ?? "live"),
+          startedAt: voice?.started_at ? String(voice.started_at) : null,
+          updatedAt: voice?.updated_at ? String(voice.updated_at) : null,
+          elapsedSeconds: typeof voice?.elapsed_seconds === "number" ? voice.elapsed_seconds : 0,
+          transcriptText: String(voice?.transcript_text ?? payload.original_input ?? ""),
+          transcriptSegments: Array.isArray(voice?.transcript_segments)
+            ? voice.transcript_segments.filter(
+                (item): item is BackendVoiceTranscriptSegment =>
+                  Boolean(item && typeof item === "object" && typeof item.text === "string")
+              )
+            : [],
+          transcriptWordCount: typeof voice?.transcript_word_count === "number" ? voice.transcript_word_count : 0,
+          challengeQuestions: Array.isArray(voice?.challenge_questions)
+            ? voice.challenge_questions.map((item) => String(item))
+            : [],
+          liveWarnings: Array.isArray(voice?.live_warnings) ? voice.live_warnings.map((item) => String(item)) : [],
+          voiceSignals: Array.isArray(voice?.voice_signals)
+            ? voice.voice_signals.filter(
+                (item): item is BackendHeuristicFinding =>
+                  Boolean(
+                    item &&
+                      typeof item === "object" &&
+                      typeof item.type === "string" &&
+                      typeof item.detail === "string" &&
+                      typeof item.severity === "string"
+                  )
+              )
+            : [],
+          listeningMode: voice?.listening_mode ? String(voice.listening_mode) : null,
+          sourceFileName: voice?.source_file_name ? String(voice.source_file_name) : null,
+          sourceFileSize: typeof voice?.source_file_size === "number" ? voice.source_file_size : null,
+          sourceMediaType: voice?.source_media_type ? String(voice.source_media_type) : null,
+          transcriptionSource: voice?.transcription_source ? String(voice.transcription_source) : null,
+          transcriptionModel: voice?.transcription_model ? String(voice.transcription_model) : null,
+          limitations: Array.isArray(voice?.limitations) ? voice.limitations.map((item) => String(item)) : [],
+          liveAiState: voice?.live_ai_state ? String(voice.live_ai_state) : "heuristics_live_only",
+          liveAiSummary: voice?.live_ai_summary ? String(voice.live_ai_summary) : "",
+          liveAiReasons: Array.isArray(voice?.live_ai_reasons) ? voice.live_ai_reasons.map((item) => String(item)) : [],
+          liveAiConfidence: voice?.live_ai_confidence ? String(voice.live_ai_confidence) : null,
+          liveAiLastUpdatedAt: voice?.live_ai_last_updated_at ? String(voice.live_ai_last_updated_at) : null,
+          liveAiAttempted: Boolean(voice?.live_ai_attempted),
+          liveAiAction: voice?.live_ai_action ? String(voice.live_ai_action) : null
+        }
+      : null;
 
   return {
     riskLabel: payload.risk_label,
@@ -1318,6 +1722,8 @@ export function adaptMessageScanResult(
     evidenceBuckets,
     modelErrors: payload.metadata?.model_errors ?? [],
     screenshotOcr,
+    documentAnalysis,
+    voiceAnalysis,
     locale,
     privacyModeEnabled: options.privacyMode,
     raw: payload
@@ -1435,6 +1841,170 @@ export async function executeScreenshotScan(input: {
   return (await response.json()) as BackendScanResponse;
 }
 
+export async function executeDocumentScan(input: {
+  file: File;
+  language: string;
+  privacyMode: boolean;
+}) {
+  const formData = new FormData();
+  formData.append("file", input.file, input.file.name);
+  formData.append("language", input.language);
+  formData.append("privacy_mode", String(input.privacyMode));
+
+  const response = await fetch(`${API_BASE_URL}/scan/document`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    let detail = "Document scan failed.";
+    try {
+      const data = (await response.json()) as { detail?: string };
+      detail = data.detail ?? detail;
+    } catch {
+      try {
+        detail = await response.text();
+      } catch {
+        // ignore final fallback
+      }
+    }
+    throw new Error(detail);
+  }
+
+  return (await response.json()) as BackendScanResponse;
+}
+
+export async function executeVoiceSessionStart(input: { language: string; privacyMode: boolean }) {
+  const response = await fetch(`${API_BASE_URL}/scan/voice/start`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      language: input.language,
+      privacy_mode: input.privacyMode
+    })
+  });
+
+  if (!response.ok) {
+    let detail = "Voice session could not be started.";
+    try {
+      const data = (await response.json()) as { detail?: string };
+      detail = data.detail ?? detail;
+    } catch {
+      try {
+        detail = await response.text();
+      } catch {
+        // ignore final fallback
+      }
+    }
+    throw new Error(detail);
+  }
+
+  return (await response.json()) as VoiceSessionBootstrap;
+}
+
+async function executeVoiceSessionMutation(
+  endpoint: "update" | "finalize",
+  input: {
+    sessionId: string;
+    transcriptText: string;
+    transcriptSegments: VoiceTranscriptSegmentInput[];
+    voiceSignals: VoiceSignalInput[];
+    elapsedSeconds: number;
+    includeAi?: boolean;
+  }
+) {
+  const response = await fetch(`${API_BASE_URL}/scan/voice/${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      session_id: input.sessionId,
+      transcript_text: input.transcriptText,
+      transcript_segments: input.transcriptSegments,
+      voice_signals: input.voiceSignals,
+      elapsed_seconds: input.elapsedSeconds,
+      include_ai: Boolean(input.includeAi)
+    })
+  });
+
+  if (!response.ok) {
+    let detail = `Voice session ${endpoint} failed.`;
+    try {
+      const data = (await response.json()) as { detail?: string };
+      detail = data.detail ?? detail;
+    } catch {
+      try {
+        detail = await response.text();
+      } catch {
+        // ignore final fallback
+      }
+    }
+    throw new Error(detail);
+  }
+
+  return (await response.json()) as BackendScanResponse;
+}
+
+export async function executeVoiceSessionUpdate(input: {
+  sessionId: string;
+  transcriptText: string;
+  transcriptSegments: VoiceTranscriptSegmentInput[];
+  voiceSignals: VoiceSignalInput[];
+  elapsedSeconds: number;
+  includeAi?: boolean;
+}) {
+  return executeVoiceSessionMutation("update", input);
+}
+
+export async function executeVoiceSessionFinalize(input: {
+  sessionId: string;
+  transcriptText: string;
+  transcriptSegments: VoiceTranscriptSegmentInput[];
+  voiceSignals: VoiceSignalInput[];
+  elapsedSeconds: number;
+  includeAi?: boolean;
+}) {
+  return executeVoiceSessionMutation("finalize", input);
+}
+
+export async function executeVoiceRecordingScan(input: {
+  file: File;
+  language: string;
+  privacyMode: boolean;
+  transcriptOverrideText: string;
+}) {
+  const formData = new FormData();
+  formData.append("file", input.file, input.file.name);
+  formData.append("language", input.language);
+  formData.append("privacy_mode", String(input.privacyMode));
+  formData.append("transcript_override_text", input.transcriptOverrideText);
+
+  const response = await fetch(`${API_BASE_URL}/scan/voice/upload`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    let detail = "Voice recording scan failed.";
+    try {
+      const data = (await response.json()) as { detail?: string };
+      detail = data.detail ?? detail;
+    } catch {
+      try {
+        detail = await response.text();
+      } catch {
+        // ignore final fallback
+      }
+    }
+    throw new Error(detail);
+  }
+
+  return (await response.json()) as BackendScanResponse;
+}
+
 export function buildPlainTextReport(result: MessageScanResult) {
   const reportCopy = SCAN_COPY[result.locale].report;
   const lines = [
@@ -1496,6 +2066,111 @@ export function buildPlainTextReport(result: MessageScanResult) {
       lines.push("", "Detected QR Codes:");
       result.screenshotOcr.qrPayloads.forEach((payload, index) => {
         lines.push(`  ${index + 1}. ${payload}`);
+      });
+    }
+  }
+
+  if (result.documentAnalysis) {
+    lines.push("", "Document X-Ray:");
+    lines.push(`  - File: ${result.documentAnalysis.fileName}`);
+    lines.push(`  - Type: ${result.documentAnalysis.fileType}`);
+    lines.push(`  - Size: ${result.documentAnalysis.fileSizeDisplay}`);
+    lines.push(`  - Parser: ${result.documentAnalysis.parser}`);
+    lines.push(`  - Inspectable: ${result.documentAnalysis.inspectable ? "yes" : "limited"}`);
+    if (result.documentAnalysis.pageCount !== null) {
+      lines.push(`  - Pages: ${result.documentAnalysis.pageCount}`);
+    }
+    if (result.documentAnalysis.sectionCount !== null) {
+      lines.push(`  - Sections: ${result.documentAnalysis.sectionCount}`);
+    }
+    if (result.documentAnalysis.imageCount > 0) {
+      lines.push(`  - Embedded images: ${result.documentAnalysis.imageCount}`);
+    }
+    if (result.documentAnalysis.protected) {
+      lines.push("  - Protected or encrypted: yes");
+    }
+    if (result.documentAnalysis.macroEnabled) {
+      lines.push("  - Macro-enabled: yes");
+    }
+    if (result.documentAnalysis.imageBased) {
+      lines.push("  - Image-based document: yes");
+    }
+    if (result.documentAnalysis.ocrFallbackUsed) {
+      lines.push(
+        `  - OCR fallback: yes (${result.documentAnalysis.ocrPagesAnalyzed} page${result.documentAnalysis.ocrPagesAnalyzed === 1 ? "" : "s"} checked${result.documentAnalysis.ocrPageLimit ? `, limit ${result.documentAnalysis.ocrPageLimit}` : ""})`
+      );
+    }
+    if (result.documentAnalysis.limitations.length > 0) {
+      lines.push("  - Limitations:");
+      result.documentAnalysis.limitations.forEach((item) => {
+        lines.push(`    * ${item}`);
+      });
+    }
+    if (result.documentAnalysis.linkPairs.length > 0) {
+      lines.push("", "Embedded Links:");
+      result.documentAnalysis.linkPairs.forEach((link, index) => {
+        const displayText = link.display_text?.trim() || "Link";
+        const targetUrl = link.target_url?.trim() || "Unknown destination";
+        lines.push(`  ${index + 1}. ${displayText} -> ${targetUrl}`);
+      });
+    }
+    if (result.documentAnalysis.qrPayloads.length > 0) {
+      lines.push("", "Document QR Payloads:");
+      result.documentAnalysis.qrPayloads.forEach((payload, index) => {
+        lines.push(`  ${index + 1}. ${payload}`);
+      });
+    }
+  }
+
+  if (result.voiceAnalysis) {
+    lines.push("", "Call Guard:");
+    lines.push(`  - Session ID: ${result.voiceAnalysis.sessionId}`);
+    lines.push(`  - State: ${result.voiceAnalysis.analysisState}`);
+    lines.push(`  - Elapsed: ${result.voiceAnalysis.elapsedSeconds}s`);
+    lines.push(`  - Transcript words: ${result.voiceAnalysis.transcriptWordCount}`);
+    if (result.voiceAnalysis.sourceFileName) {
+      lines.push(`  - Source file: ${result.voiceAnalysis.sourceFileName}`);
+    }
+    if (result.voiceAnalysis.sourceMediaType) {
+      lines.push(`  - Media type: ${result.voiceAnalysis.sourceMediaType}`);
+    }
+    if (result.voiceAnalysis.transcriptionSource) {
+      lines.push(`  - Transcript source: ${result.voiceAnalysis.transcriptionSource}`);
+    }
+    if (result.voiceAnalysis.transcriptionModel) {
+      lines.push(`  - Transcript model: ${result.voiceAnalysis.transcriptionModel}`);
+    }
+    if (result.voiceAnalysis.liveAiState) {
+      lines.push(`  - Live AI state: ${result.voiceAnalysis.liveAiState}`);
+    }
+    if (result.voiceAnalysis.liveAiConfidence) {
+      lines.push(`  - Live AI confidence: ${result.voiceAnalysis.liveAiConfidence}`);
+    }
+    if (result.voiceAnalysis.liveAiSummary) {
+      lines.push(`  - Live AI summary: ${result.voiceAnalysis.liveAiSummary}`);
+    }
+    if (result.voiceAnalysis.liveWarnings.length > 0) {
+      lines.push("  - Live warnings:");
+      result.voiceAnalysis.liveWarnings.forEach((warning) => {
+        lines.push(`    * ${warning}`);
+      });
+    }
+    if (result.voiceAnalysis.challengeQuestions.length > 0) {
+      lines.push("  - Challenge questions:");
+      result.voiceAnalysis.challengeQuestions.forEach((question, index) => {
+        lines.push(`    ${index + 1}. ${question}`);
+      });
+    }
+    if (result.voiceAnalysis.voiceSignals.length > 0) {
+      lines.push("  - Voice-pattern signals:");
+      result.voiceAnalysis.voiceSignals.forEach((signal) => {
+        lines.push(`    * [${signal.severity}] ${signal.detail}`);
+      });
+    }
+    if (result.voiceAnalysis.transcriptSegments.length > 0) {
+      lines.push("  - Transcript segments:");
+      result.voiceAnalysis.transcriptSegments.slice(-8).forEach((segment, index) => {
+        lines.push(`    ${index + 1}. ${segment.text}`);
       });
     }
   }
@@ -1685,7 +2360,8 @@ export async function fetchScanCapabilities() {
       screenshotAnalysisAvailable: false,
       screenshotRequiresApiKey: true,
       llmProvider: null,
-      llmModel: null
+      llmModel: null,
+      voiceLiveBrowserMode: true
     } as ScanCapabilities;
   }
 
@@ -1694,13 +2370,21 @@ export async function fetchScanCapabilities() {
     screenshot_requires_api_key: boolean;
     llm_provider: string | null;
     llm_model: string | null;
+    voice_live_browser_mode?: boolean;
+    voice_live_streaming_available?: boolean;
+    voice_recording_upload_available?: boolean;
+    voice_recording_auto_transcription_available?: boolean;
   };
 
   return {
     screenshotAnalysisAvailable: payload.screenshot_analysis_available,
     screenshotRequiresApiKey: payload.screenshot_requires_api_key,
     llmProvider: payload.llm_provider,
-    llmModel: payload.llm_model
+    llmModel: payload.llm_model,
+    voiceLiveBrowserMode: payload.voice_live_browser_mode,
+    voiceLiveStreamingAvailable: payload.voice_live_streaming_available,
+    voiceRecordingUploadAvailable: payload.voice_recording_upload_available,
+    voiceRecordingAutoTranscriptionAvailable: payload.voice_recording_auto_transcription_available
   } as ScanCapabilities;
 }
 

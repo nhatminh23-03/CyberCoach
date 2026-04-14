@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ComponentType } from "react";
 
-import { ChatIcon } from "@/components/home/icons";
+import { ChatIcon, PhoneCallIcon } from "@/components/home/icons";
 
 function LinkScanIcon({ className }: { className?: string }) {
   return (
@@ -48,7 +48,7 @@ function DocumentIcon({ className }: { className?: string }) {
   );
 }
 
-type ActiveScanItem = "message" | "url" | "screenshot" | "ar" | "document";
+type ActiveScanItem = "message" | "url" | "screenshot" | "document" | "voice" | "ar";
 
 type SidebarItem = {
   key: ActiveScanItem;
@@ -62,8 +62,9 @@ const items: SidebarItem[] = [
   { key: "message", label: "Message Scan", icon: ChatIcon, href: "/scan" },
   { key: "url", label: "URL Scan", icon: LinkScanIcon, href: "/scan/url" },
   { key: "screenshot", label: "Screenshot Scan", icon: ScreenshotIcon, href: "/scan/screenshot" },
-  { key: "ar", label: "AR Scanner", icon: CubeIcon, href: "/scan?view=ar", soon: true },
-  { key: "document", label: "Document Scan", icon: DocumentIcon, href: "/scan?view=document", soon: true }
+  { key: "document", label: "Document Scan", icon: DocumentIcon, href: "/scan/document" },
+  { key: "voice", label: "Call Guard", icon: PhoneCallIcon, href: "/scan/voice" },
+  { key: "ar", label: "AR Scanner", icon: CubeIcon, href: "/scan?view=ar", soon: true }
 ];
 
 export function ScanSidebar({ activeItem = "message" }: { activeItem?: ActiveScanItem }) {
@@ -84,29 +85,31 @@ export function ScanSidebar({ activeItem = "message" }: { activeItem?: ActiveSca
 
   return (
     <>
-      <div className="col-span-12 flex items-center justify-between border-b border-outline-variant/15 pb-3 pt-1 xl:hidden">
-        <div>
-          <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container">
-            Scanner Suite
-          </span>
-          <p className="mt-2 text-sm text-on-surface-variant">
-            {items.find((item) => item.key === activeItem)?.label ?? "Message Scan"}
-          </p>
-        </div>
+      <div className="sticky top-[73px] z-30 col-span-12 border-b border-outline-variant/15 bg-primary-container/92 pb-3 pt-1 backdrop-blur-xl xl:hidden">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container">
+              Scanner Suite
+            </span>
+            <p className="mt-2 text-sm text-on-surface-variant">
+              {items.find((item) => item.key === activeItem)?.label ?? "Message Scan"}
+            </p>
+          </div>
 
-        <button
-          type="button"
-          aria-label="Open scan menu"
-          aria-expanded={mobileOpen}
-          onClick={() => setMobileOpen((open) => !open)}
-          className="group flex h-12 w-12 items-center justify-center border border-outline-variant/30 bg-surface-container-lowest/70 text-on-surface transition-all duration-300 hover:border-secondary/40 hover:bg-surface-container-low"
-        >
-          <span className="flex w-5 flex-col gap-1.5">
-            <span className={`h-px w-full bg-current transition-transform duration-300 ${mobileOpen ? "translate-y-2 rotate-45" : ""}`} />
-            <span className={`h-px w-full bg-current transition-opacity duration-300 ${mobileOpen ? "opacity-0" : "opacity-100"}`} />
-            <span className={`h-px w-full bg-current transition-transform duration-300 ${mobileOpen ? "-translate-y-2 -rotate-45" : ""}`} />
-          </span>
-        </button>
+          <button
+            type="button"
+            aria-label="Open scan menu"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((open) => !open)}
+            className="group flex h-12 w-12 items-center justify-center border border-outline-variant/30 bg-surface-container-lowest/70 text-on-surface transition-all duration-300 hover:border-secondary/40 hover:bg-surface-container-low"
+          >
+            <span className="flex w-5 flex-col gap-1.5">
+              <span className={`h-px w-full bg-current transition-transform duration-300 ${mobileOpen ? "translate-y-2 rotate-45" : ""}`} />
+              <span className={`h-px w-full bg-current transition-opacity duration-300 ${mobileOpen ? "opacity-0" : "opacity-100"}`} />
+              <span className={`h-px w-full bg-current transition-transform duration-300 ${mobileOpen ? "-translate-y-2 -rotate-45" : ""}`} />
+            </span>
+          </button>
+        </div>
       </div>
 
       <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { CheckCircleIcon, LockIcon, ShieldCheckIcon } from "@/components/home/icons";
@@ -12,6 +12,7 @@ import {
   getDecisionModeBadgeLabel,
   getDecisionPanelCopy
 } from "@/components/scan/DecisionPanels";
+import { useHighlightOnFirstVisible } from "@/components/scan/useHighlightOnFirstVisible";
 import { getScanLocaleCopy, type MessageScanResult, type SupportedLocale, type UrlPrecheck } from "@/lib/scan";
 
 type UrlScanResultsProps = {
@@ -21,17 +22,18 @@ type UrlScanResultsProps = {
   onCopyReport: () => Promise<void>;
   onDownloadReport: (format: "txt" | "md") => Promise<void>;
   reportBusy: "copy" | "txt" | "md" | null;
+  decisionHighlightKey?: number;
 };
 
 export function getUrlResultCopy(locale: SupportedLocale) {
   if (locale === "vi") {
     return {
-      urlMetadata: "Thong Tin URL",
-      forensicBreakdown: "Phan Tich Phap Chung",
-      evidenceBuckets: "Lop Bang Chung",
-      riskLayers: "Cac Lop Rui Ro",
-      destinationInspection: "Kiem Tra Trang Dich",
-      liveDestinationReview: "Danh Gia Dich Song",
+      urlMetadata: "Chi Tiet Lien Ket",
+      forensicBreakdown: "Nhung Gi Da Kiem Tra",
+      evidenceBuckets: "Nguon Rui Ro",
+      riskLayers: "Tom Tat Rui Ro",
+      destinationInspection: "Kiem Tra Dich Den",
+      liveDestinationReview: "Neu Ban Mo Lien Ket Nay",
       normalizedUrl: "URL Chuan Hoa",
       domain: "Ten Mien",
       registeredDomain: "Ten Mien Goc",
@@ -42,7 +44,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       score: "Diem",
       findings: "Phat Hien",
       notInspected: "Chua Kiem Tra",
-      noBuckets: "Chua co du lieu phan lop bang chung cho URL nay.",
+      noBuckets: "Chua co tom tat nao cho biet rui ro hien den tu dau trong lien ket nay.",
       phishingDatabase: "Co So Du Lieu Lua Dao",
       foundInPhishTank: "Da Tim Thay Trong PhishTank",
       notFound: "Khong Tim Thay",
@@ -52,8 +54,8 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       rawIp: "IP Truc Tiep",
       urlShortener: "Rut Gon URL",
       phishTankMatch: "Trung PhishTank",
-      precheckPlaceholder: "Nhap URL de xem host chuan hoa, ten mien cap cao nhat, so subdomain va trang thai doi chieu co so du lieu lua dao.",
-      noLiveInspection: "Chua co du lieu kiem tra trang dich song cho URL nay.",
+      precheckPlaceholder: "Nhap URL de xem lien ket duoc chuan hoa the nao, ten mien goc, so subdomain va tinh trang doi chieu voi co so du lieu lua dao.",
+      noLiveInspection: "Chua co thong tin kiem tra dich den cho lien ket nay.",
       inspectionBlocked: "Kiem Tra Da Bi Chan",
       inspectionFailed: "Khong The Tai Trang Dich",
       finalUrl: "URL Cuoi Cung",
@@ -68,7 +70,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       metaRefresh: "Meta Refresh",
       queryParams: "So Tham So",
       noFindingsRecorded: "Khong ghi nhan them dau hieu nao trong lop nay.",
-      destinationClean: "Kiem tra trang dich hoan tat va khong phat hien them dau hieu bat thuong.",
+      destinationClean: "Kiem tra dich den da hoan tat va khong phat hien them dau hieu dang lo.",
       yes: "Co",
       no: "Khong"
     };
@@ -76,12 +78,12 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "es") {
     return {
-      urlMetadata: "Metadatos de URL",
-      forensicBreakdown: "Analisis Forense",
-      evidenceBuckets: "Capas de Evidencia",
-      riskLayers: "Capas de Riesgo",
-      destinationInspection: "Inspeccion del Destino",
-      liveDestinationReview: "Revision en Vivo del Destino",
+      urlMetadata: "Detalles del Enlace",
+      forensicBreakdown: "Lo que se reviso",
+      evidenceBuckets: "De donde viene el riesgo",
+      riskLayers: "Resumen del riesgo",
+      destinationInspection: "Revision del destino",
+      liveDestinationReview: "Si abres este enlace",
       normalizedUrl: "URL Normalizada",
       domain: "Dominio",
       registeredDomain: "Dominio Registrado",
@@ -92,7 +94,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       score: "Puntaje",
       findings: "Hallazgos",
       notInspected: "Sin inspeccion",
-      noBuckets: "No se devolvieron capas de evidencia para este analisis de URL.",
+      noBuckets: "Aun no hay un resumen de donde proviene el riesgo para este enlace.",
       phishingDatabase: "Base de Datos de Phishing",
       foundInPhishTank: "Encontrado en PhishTank",
       notFound: "No Encontrado",
@@ -103,7 +105,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       urlShortener: "Acortador de URL",
       phishTankMatch: "Coincidencia con PhishTank",
       precheckPlaceholder: "Pega una URL para ver el host normalizado, el dominio registrado, los subdominios y el estado contra phishing.",
-      noLiveInspection: "No se devolvieron datos de inspeccion en vivo para esta URL.",
+      noLiveInspection: "No se devolvieron datos de revision del destino para esta URL.",
       inspectionBlocked: "Inspeccion bloqueada",
       inspectionFailed: "No se pudo cargar el destino",
       finalUrl: "URL Final",
@@ -118,7 +120,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       metaRefresh: "Meta Refresh",
       queryParams: "Parametros",
       noFindingsRecorded: "No se registraron hallazgos en esta capa.",
-      destinationClean: "La inspeccion en vivo termino sin advertencias adicionales de la pagina.",
+      destinationClean: "La revision del destino termino sin advertencias adicionales sobre la pagina.",
       yes: "Si",
       no: "No"
     };
@@ -126,12 +128,12 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "zh") {
     return {
-      urlMetadata: "URL 元数据",
-      forensicBreakdown: "取证分析",
-      evidenceBuckets: "证据分层",
-      riskLayers: "风险层",
-      destinationInspection: "目标页面检查",
-      liveDestinationReview: "实时目标审查",
+      urlMetadata: "链接详情",
+      forensicBreakdown: "已检查内容",
+      evidenceBuckets: "风险主要来自哪里",
+      riskLayers: "风险概览",
+      destinationInspection: "目标检查",
+      liveDestinationReview: "如果打开这个链接",
       normalizedUrl: "规范化 URL",
       domain: "域名",
       registeredDomain: "注册域名",
@@ -142,7 +144,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       score: "分数",
       findings: "发现",
       notInspected: "未检查",
-      noBuckets: "此 URL 扫描未返回证据分层。",
+      noBuckets: "这次扫描还没有返回“风险来自哪里”的摘要。",
       phishingDatabase: "钓鱼数据库",
       foundInPhishTank: "已在 PhishTank 中发现",
       notFound: "未发现",
@@ -153,7 +155,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       urlShortener: "短链接",
       phishTankMatch: "PhishTank 命中",
       precheckPlaceholder: "粘贴 URL 以预览规范化主机、注册域名、子域名数量和钓鱼数据库状态。",
-      noLiveInspection: "此 URL 扫描没有返回实时目标检查数据。",
+      noLiveInspection: "这次 URL 扫描没有返回目标检查数据。",
       inspectionBlocked: "检查已阻止",
       inspectionFailed: "无法加载目标页面",
       finalUrl: "最终 URL",
@@ -168,7 +170,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       metaRefresh: "Meta Refresh",
       queryParams: "查询参数",
       noFindingsRecorded: "这一层未记录到额外发现。",
-      destinationClean: "实时目标检查已完成，未发现额外页面行为警告。",
+      destinationClean: "目标检查已完成，未发现额外的页面行为警告。",
       yes: "是",
       no: "否"
     };
@@ -176,12 +178,12 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "ko") {
     return {
-      urlMetadata: "URL 메타데이터",
-      forensicBreakdown: "포렌식 분석",
-      evidenceBuckets: "증거 레이어",
-      riskLayers: "위험 레이어",
-      destinationInspection: "목적지 점검",
-      liveDestinationReview: "실시간 목적지 검토",
+      urlMetadata: "링크 세부정보",
+      forensicBreakdown: "확인한 내용",
+      evidenceBuckets: "위험이 오는 곳",
+      riskLayers: "위험 요약",
+      destinationInspection: "목적지 확인",
+      liveDestinationReview: "이 링크를 열면",
       normalizedUrl: "정규화된 URL",
       domain: "도메인",
       registeredDomain: "등록 도메인",
@@ -192,7 +194,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       score: "점수",
       findings: "탐지 수",
       notInspected: "미점검",
-      noBuckets: "이 URL 스캔에는 증거 레이어가 반환되지 않았습니다.",
+      noBuckets: "이 링크에서 위험이 어디서 오는지에 대한 요약이 아직 없습니다.",
       phishingDatabase: "피싱 데이터베이스",
       foundInPhishTank: "PhishTank 일치",
       notFound: "미발견",
@@ -203,7 +205,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       urlShortener: "단축 URL",
       phishTankMatch: "PhishTank 일치",
       precheckPlaceholder: "URL을 붙여 넣으면 정규화된 호스트, 등록 도메인, 서브도메인 수와 데이터베이스 상태를 확인할 수 있습니다.",
-      noLiveInspection: "이 URL 스캔에는 실시간 목적지 점검 데이터가 없습니다.",
+      noLiveInspection: "이 URL 스캔에는 목적지 확인 데이터가 없습니다.",
       inspectionBlocked: "점검 차단",
       inspectionFailed: "목적지를 불러오지 못했습니다",
       finalUrl: "최종 URL",
@@ -218,7 +220,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       metaRefresh: "메타 리프레시",
       queryParams: "쿼리 파라미터",
       noFindingsRecorded: "이 레이어에서는 추가 탐지가 없었습니다.",
-      destinationClean: "실시간 목적지 점검이 끝났고 추가 페이지 경고는 없었습니다.",
+      destinationClean: "목적지 확인이 끝났고 추가 페이지 경고는 없었습니다.",
       yes: "예",
       no: "아니오"
     };
@@ -226,12 +228,12 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "tl") {
     return {
-      urlMetadata: "Metadata ng URL",
-      forensicBreakdown: "Forensic Breakdown",
-      evidenceBuckets: "Mga Layer ng Ebidensya",
-      riskLayers: "Mga Layer ng Panganib",
-      destinationInspection: "Inspeksyon ng Destinasyon",
-      liveDestinationReview: "Live na Pagsusuri ng Destinasyon",
+      urlMetadata: "Detalye ng Link",
+      forensicBreakdown: "Ano ang Sinuri",
+      evidenceBuckets: "Saan nanggagaling ang panganib",
+      riskLayers: "Buod ng panganib",
+      destinationInspection: "Pagsuri sa destinasyon",
+      liveDestinationReview: "Kapag binuksan ang link",
       normalizedUrl: "Na-normalize na URL",
       domain: "Domain",
       registeredDomain: "Rehistradong Domain",
@@ -242,7 +244,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       score: "Iskor",
       findings: "Natuklasan",
       notInspected: "Hindi nasuri",
-      noBuckets: "Walang naibalik na evidence bucket para sa URL scan na ito.",
+      noBuckets: "Wala pang buod kung saan nanggagaling ang panganib para sa link na ito.",
       phishingDatabase: "Database ng Phishing",
       foundInPhishTank: "Natagpuan sa PhishTank",
       notFound: "Walang Tugma",
@@ -253,7 +255,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       urlShortener: "Shortener ng URL",
       phishTankMatch: "Tugma sa PhishTank",
       precheckPlaceholder: "I-paste ang URL para makita ang normalized host, rehistradong domain, bilang ng subdomain, at phishing database status.",
-      noLiveInspection: "Walang live destination inspection data para sa URL na ito.",
+      noLiveInspection: "Walang naibalik na detalye para sa destination check ng URL na ito.",
       inspectionBlocked: "Na-block ang inspeksyon",
       inspectionFailed: "Hindi ma-load ang destinasyon",
       finalUrl: "Huling URL",
@@ -268,7 +270,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       metaRefresh: "Meta Refresh",
       queryParams: "Mga Parameter",
       noFindingsRecorded: "Walang naitalang karagdagang signal sa layer na ito.",
-      destinationClean: "Natapos ang live destination inspection nang walang dagdag na babala sa page behavior.",
+      destinationClean: "Natapos ang destination check nang walang dagdag na babala tungkol sa page behavior.",
       yes: "Oo",
       no: "Hindi"
     };
@@ -276,12 +278,12 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "fr") {
     return {
-      urlMetadata: "Metadonnees URL",
-      forensicBreakdown: "Analyse Forensique",
-      evidenceBuckets: "Couches de Preuves",
-      riskLayers: "Couches de Risque",
-      destinationInspection: "Inspection de la Destination",
-      liveDestinationReview: "Verification en Direct de la Destination",
+      urlMetadata: "Details du Lien",
+      forensicBreakdown: "Ce qui a ete verifie",
+      evidenceBuckets: "D'ou vient le risque",
+      riskLayers: "Resume du risque",
+      destinationInspection: "Verification de la destination",
+      liveDestinationReview: "Si vous ouvrez ce lien",
       normalizedUrl: "URL Normalisee",
       domain: "Domaine",
       registeredDomain: "Domaine Enregistre",
@@ -292,7 +294,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       score: "Score",
       findings: "Constats",
       notInspected: "Non inspecte",
-      noBuckets: "Aucune couche de preuves n'a ete retournee pour cette analyse URL.",
+      noBuckets: "Aucun resume n'indique encore d'ou vient le risque pour ce lien.",
       phishingDatabase: "Base de Donnees Phishing",
       foundInPhishTank: "Trouve dans PhishTank",
       notFound: "Aucune Correspondance",
@@ -303,7 +305,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       urlShortener: "Raccourcisseur d'URL",
       phishTankMatch: "Correspondance PhishTank",
       precheckPlaceholder: "Collez une URL pour voir l'hote normalise, le domaine enregistre, le nombre de sous-domaines et l'etat de la base phishing.",
-      noLiveInspection: "Aucune donnee d'inspection en direct n'a ete retournee pour cette URL.",
+      noLiveInspection: "Aucune information de verification de destination n'a ete retournee pour cette URL.",
       inspectionBlocked: "Inspection bloquee",
       inspectionFailed: "Impossible de charger la destination",
       finalUrl: "URL Finale",
@@ -318,19 +320,19 @@ export function getUrlResultCopy(locale: SupportedLocale) {
       metaRefresh: "Meta Refresh",
       queryParams: "Parametres",
       noFindingsRecorded: "Aucun signal supplementaire n'a ete enregistre dans cette couche.",
-      destinationClean: "L'inspection en direct est terminee sans alerte supplementaire sur le comportement de la page.",
+      destinationClean: "La verification de la destination s'est terminee sans avertissement supplementaire sur le comportement de la page.",
       yes: "Oui",
       no: "Non"
     };
   }
 
   return {
-    urlMetadata: "URL Metadata",
-    forensicBreakdown: "Forensic Breakdown",
-    evidenceBuckets: "Evidence Buckets",
-    riskLayers: "Risk Layers",
-    destinationInspection: "Destination Inspection",
-    liveDestinationReview: "Live Destination Review",
+    urlMetadata: "Link Details",
+    forensicBreakdown: "What We Checked",
+    evidenceBuckets: "Where the risk is coming from",
+    riskLayers: "Risk Breakdown",
+    destinationInspection: "Destination Check",
+    liveDestinationReview: "If you open this link",
     normalizedUrl: "Normalized URL",
     domain: "Domain",
     registeredDomain: "Registered Domain",
@@ -341,7 +343,7 @@ export function getUrlResultCopy(locale: SupportedLocale) {
     score: "Score",
     findings: "Findings",
     notInspected: "Not inspected",
-    noBuckets: "No evidence buckets were returned for this URL scan.",
+    noBuckets: "There is not enough information yet to summarize where the risk is coming from for this link.",
     phishingDatabase: "Phishing Database",
     foundInPhishTank: "Found in PhishTank",
     notFound: "Not Found",
@@ -351,8 +353,8 @@ export function getUrlResultCopy(locale: SupportedLocale) {
     rawIp: "Raw IP",
     urlShortener: "URL Shortener",
     phishTankMatch: "PhishTank Match",
-    precheckPlaceholder: "Paste a URL to preview its normalized host, top-level domain, subdomain count, and phishing-database status.",
-    noLiveInspection: "No live destination inspection data was returned for this URL scan.",
+    precheckPlaceholder: "Paste a link to preview the domain, subdomains, normalized host, and phishing-database status before you open it.",
+    noLiveInspection: "No destination-check data was returned for this link.",
     inspectionBlocked: "Inspection blocked",
     inspectionFailed: "Unable to load destination",
     finalUrl: "Final URL",
@@ -366,8 +368,8 @@ export function getUrlResultCopy(locale: SupportedLocale) {
     externalAction: "External Form Action",
     metaRefresh: "Meta Refresh",
     queryParams: "Query Params",
-    noFindingsRecorded: "No findings were recorded in this layer.",
-    destinationClean: "Live destination inspection completed without additional page-behavior warnings.",
+    noFindingsRecorded: "No additional warnings were recorded in this area.",
+    destinationClean: "The destination check finished without additional page-behavior warnings.",
     yes: "Yes",
     no: "No"
   };
@@ -378,17 +380,27 @@ function ResultShell({
   eyebrow,
   children,
   className = "",
-  delay = 0
+  delay = 0,
+  highlightSessionKey = null,
+  highlightEnabled = false
 }: {
   title: string;
   eyebrow: string;
   children: ReactNode;
   className?: string;
   delay?: number;
+  highlightSessionKey?: string | null;
+  highlightEnabled?: boolean;
 }) {
+  const { ref, activeClassName } = useHighlightOnFirstVisible({
+    sessionKey: highlightSessionKey,
+    enabled: highlightEnabled
+  });
+
   return (
     <section
-      className={`ghost-border animate-fade-up bg-surface-container-low p-8 ${className}`}
+      ref={ref}
+      className={`ghost-border scan-card-highlightable animate-fade-up bg-surface-container-low p-8 ${activeClassName} ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">{eyebrow}</p>
@@ -619,6 +631,31 @@ function compactUrlDisplay(value: string | null) {
   }
 }
 
+function calmInspectionMessage(inspection: MessageScanResult["urlInspection"][number]) {
+  if (inspection.inspection_succeeded) {
+    return null;
+  }
+
+  if (inspection.blocked_reason) {
+    return "CyberCoach blocked the live destination lookup before opening the page, so this destination remains only partially inspected.";
+  }
+
+  const rawError = String(inspection.error ?? "").toLowerCase();
+  if (rawError.includes("timed out") || rawError.includes("timeout")) {
+    return "CyberCoach started the live destination lookup, but the page did not respond in time.";
+  }
+  if (
+    rawError.includes("name or service not known") ||
+    rawError.includes("temporary failure in name resolution") ||
+    rawError.includes("nodename nor servname provided") ||
+    rawError.includes("no address associated with hostname") ||
+    rawError.includes("failed to resolve")
+  ) {
+    return "CyberCoach could not resolve this destination from the current backend environment.";
+  }
+  return "CyberCoach could not complete the live destination lookup from the current backend environment.";
+}
+
 function bucketLabel(key: string, locale: SupportedLocale) {
   const copy = getUrlResultCopy(locale);
   if (key === "reputation") {
@@ -633,7 +670,7 @@ function bucketLabel(key: string, locale: SupportedLocale) {
 function bucketSummary(bucket: MessageScanResult["evidenceBuckets"][number], locale: SupportedLocale) {
   const copy = getUrlResultCopy(locale);
   if (bucket.key === "destination" && bucket.inspected === false) {
-    return copy.noLiveInspection;
+    return bucket.summary || copy.noLiveInspection;
   }
   if (bucket.key === "destination" && bucket.finding_count === 0 && bucket.inspected !== false) {
     return copy.destinationClean;
@@ -655,14 +692,14 @@ export function EvidenceBucketsCard({ result }: { result: MessageScanResult }) {
     <div className="space-y-3">
       {result.evidenceBuckets.map((bucket) => (
         <div key={bucket.key} className="ghost-border bg-surface-container-lowest/55 p-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="min-w-0 flex-1">
+          <div className="space-y-4">
+            <div className="min-w-0">
               <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">
                 {bucketLabel(bucket.key, result.locale)}
               </p>
               <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">{bucketSummary(bucket, result.locale)}</p>
             </div>
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:min-w-[248px]">
+            <div className="grid max-w-md gap-3 sm:grid-cols-2">
               <div className="border border-outline-variant/20 bg-surface-container-low p-3">
                 <p className="font-label text-[9px] font-bold uppercase tracking-[0.12em] text-outline">{urlCopy.score}</p>
                 <p className={`mt-2 font-headline text-3xl font-bold ${bucketTone(bucket.score)}`}>{bucket.score}</p>
@@ -720,10 +757,10 @@ export function DestinationInspectionCard({ result }: { result: MessageScanResul
             </div>
           </div>
 
-          {inspection.blocked_reason ? (
-            <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">{inspection.blocked_reason}</p>
-          ) : inspection.error && !inspection.inspection_succeeded ? (
-            <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">{inspection.error}</p>
+          {inspection.blocked_reason || (inspection.error && !inspection.inspection_succeeded) ? (
+            <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+              {calmInspectionMessage(inspection)}
+            </p>
           ) : (
             <div className="mt-4 space-y-4">
               <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]">
@@ -810,11 +847,31 @@ export function UrlScanResults({
   loading,
   onCopyReport,
   onDownloadReport,
-  reportBusy
+  reportBusy,
+  decisionHighlightKey = 0
 }: UrlScanResultsProps) {
+  const [decisionHighlightActive, setDecisionHighlightActive] = useState(false);
   const copy = useMemo(() => getScanLocaleCopy(result?.locale ?? "en"), [result?.locale]);
   const decisionCopy = useMemo(() => getDecisionPanelCopy(result?.locale ?? "en"), [result?.locale]);
   const urlCopy = useMemo(() => getUrlResultCopy(result?.locale ?? "en"), [result?.locale]);
+  const highlightSessionKey = result
+    ? [result.raw.metadata?.history_id ?? "", result.riskScore, result.summary, result.likelyScamPattern].join("::")
+    : null;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || decisionHighlightKey === 0) {
+      return;
+    }
+
+    setDecisionHighlightActive(true);
+    const timeout = window.setTimeout(() => {
+      setDecisionHighlightActive(false);
+    }, 1700);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [decisionHighlightKey]);
 
   if (loading) {
     return <LoadingResults />;
@@ -826,7 +883,13 @@ export function UrlScanResults({
 
   return (
     <section className="grid grid-cols-12 gap-6">
-      <ResultShell title={result.riskLabelDisplay} eyebrow={copy.result.riskSummary} className="col-span-12 md:col-span-5">
+      <ResultShell
+        title={result.riskLabelDisplay}
+        eyebrow={copy.result.riskSummary}
+        className="col-span-12 md:col-span-5"
+        highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:risk` : null}
+        highlightEnabled
+      >
         <div className="space-y-5">
           <div className={`font-headline text-5xl font-extrabold tracking-editorial ${RiskAccent({ label: result.riskLabel })}`}>
             {result.riskScore}
@@ -855,23 +918,25 @@ export function UrlScanResults({
         </div>
       </ResultShell>
 
-      <ResultShell title={urlCopy.urlMetadata} eyebrow={urlCopy.forensicBreakdown} className="col-span-12 md:col-span-7" delay={60}>
-        <UrlMetadataCard precheck={precheck} locale={result.locale} />
-      </ResultShell>
-
-      <ResultShell title={urlCopy.evidenceBuckets} eyebrow={urlCopy.riskLayers} className="col-span-12 2xl:col-span-4" delay={105}>
-        <EvidenceBucketsCard result={result} />
-      </ResultShell>
-
-      <ResultShell title={urlCopy.destinationInspection} eyebrow={urlCopy.liveDestinationReview} className="col-span-12 2xl:col-span-8" delay={115}>
-        <DestinationInspectionCard result={result} />
-      </ResultShell>
-
-      <ResultShell title={copy.result.recommendedActions} eyebrow={copy.result.whatToDoNext} className="col-span-12 md:col-span-7" delay={120}>
+      <ResultShell
+        title={copy.result.recommendedActions}
+        eyebrow={copy.result.whatToDoNext}
+        className="col-span-12 md:col-span-7"
+        delay={60}
+        highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:actions` : null}
+        highlightEnabled
+      >
         <RecommendedActionsCard actions={result.recommendedActions} />
       </ResultShell>
 
-      <ResultShell title={copy.result.keyFindings} eyebrow={copy.result.patternScan} className="col-span-12 md:col-span-5" delay={180}>
+      <ResultShell
+        title={copy.result.keyFindings}
+        eyebrow={copy.result.patternScan}
+        className="col-span-12 md:col-span-5"
+        delay={120}
+        highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:findings` : null}
+        highlightEnabled
+      >
         <div className="space-y-4">
           {result.topReasons.map((reason, index) => (
             <div key={reason} className="flex gap-4">
@@ -885,7 +950,12 @@ export function UrlScanResults({
       </ResultShell>
 
       {result.technicalDetails.length > 0 ? (
-        <ResultShell title={copy.result.technicalDetails} eyebrow={copy.result.triggeredRules} className="col-span-12" delay={240}>
+        <ResultShell
+          title={copy.result.technicalDetails}
+          eyebrow={copy.result.triggeredRules}
+          className={`col-span-12 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+          delay={180}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             {result.technicalDetails.map((detail) => (
               <div key={`${detail.label}-${detail.detail}`} className="ghost-border bg-surface-container-lowest/55 p-4">
@@ -902,11 +972,33 @@ export function UrlScanResults({
         </ResultShell>
       ) : null}
 
-      <ResultShell title={decisionCopy.titles.decisionTrace} eyebrow={decisionCopy.titles.consensusEngine} className="col-span-12 md:col-span-4" delay={270}>
+      <ResultShell title={urlCopy.urlMetadata} eyebrow={urlCopy.forensicBreakdown} className="col-span-12" delay={220}>
+        <UrlMetadataCard precheck={precheck} locale={result.locale} />
+      </ResultShell>
+
+      <ResultShell title={urlCopy.evidenceBuckets} eyebrow={urlCopy.riskLayers} className="col-span-12" delay={240}>
+        <EvidenceBucketsCard result={result} />
+      </ResultShell>
+
+      <ResultShell title={urlCopy.destinationInspection} eyebrow={urlCopy.liveDestinationReview} className="col-span-12" delay={255}>
+        <DestinationInspectionCard result={result} />
+      </ResultShell>
+
+      <ResultShell
+        title={decisionCopy.titles.decisionTrace}
+        eyebrow={decisionCopy.titles.consensusEngine}
+        className={`col-span-12 md:col-span-4 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+        delay={270}
+      >
         <DecisionSummaryPanel result={result} />
       </ResultShell>
 
-      <ResultShell title={decisionCopy.titles.modelAssessments} eyebrow={decisionCopy.titles.crossModelReview} className="col-span-12 md:col-span-8" delay={285}>
+      <ResultShell
+        title={decisionCopy.titles.modelAssessments}
+        eyebrow={decisionCopy.titles.crossModelReview}
+        className={`col-span-12 md:col-span-8 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+        delay={285}
+      >
         <ModelAssessmentsPanel result={result} />
       </ResultShell>
 
@@ -932,17 +1024,17 @@ export function UrlScanResults({
       ) : null}
 
       <ResultShell title={copy.result.reportActions} eyebrow={copy.result.forwardOrArchive} className="col-span-12" delay={420}>
-        <div className="grid gap-3 md:grid-cols-3">
-          <button type="button" onClick={() => void onCopyReport()} className="editorial-button justify-between px-5">
-            <span>{reportBusy === "copy" ? copy.result.copying : copy.result.copyReport}</span>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <button type="button" onClick={() => void onCopyReport()} className="editorial-button min-h-[72px] justify-between px-5 py-4">
+            <span className="max-w-[14ch] text-left">{reportBusy === "copy" ? copy.result.copying : copy.result.copyReport}</span>
             <span className="text-secondary">TXT</span>
           </button>
-          <button type="button" onClick={() => void onDownloadReport("txt")} className="editorial-button justify-between px-5">
-            <span>{reportBusy === "txt" ? copy.result.preparing : copy.result.downloadTxt}</span>
+          <button type="button" onClick={() => void onDownloadReport("txt")} className="editorial-button min-h-[72px] justify-between px-5 py-4">
+            <span className="max-w-[14ch] text-left">{reportBusy === "txt" ? copy.result.preparing : copy.result.downloadTxt}</span>
             <span className="text-secondary">.txt</span>
           </button>
-          <button type="button" onClick={() => void onDownloadReport("md")} className="editorial-button justify-between px-5">
-            <span>{reportBusy === "md" ? copy.result.preparing : copy.result.downloadMd}</span>
+          <button type="button" onClick={() => void onDownloadReport("md")} className="editorial-button min-h-[72px] justify-between px-5 py-4">
+            <span className="max-w-[14ch] text-left">{reportBusy === "md" ? copy.result.preparing : copy.result.downloadMd}</span>
             <span className="text-secondary">.md</span>
           </button>
         </div>

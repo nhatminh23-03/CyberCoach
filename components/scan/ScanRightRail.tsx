@@ -52,6 +52,12 @@ function scanTypeLabel(scanType: string) {
   if (scanType === "screenshot") {
     return "Screenshot Scan";
   }
+  if (scanType === "document") {
+    return "Document Scan";
+  }
+  if (scanType === "voice") {
+    return "Call Guard";
+  }
   return "Analysis";
 }
 
@@ -166,7 +172,7 @@ export function ScanRightRail({ historyItems, intelFeedItems, locale }: ScanRigh
             <div className="ghost-border bg-surface-container-low p-5">
               <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Awaiting First Scan</p>
               <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-                Recent analyses will appear here after your first live message scan in this backend session.
+                Recent analyses will appear here after your first live scan in this backend session.
               </p>
             </div>
           )}

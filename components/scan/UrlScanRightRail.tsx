@@ -1,19 +1,31 @@
 "use client";
 
-import { getScanLocaleCopy, type MessageScanResult, type SupportedLocale } from "@/lib/scan";
+import { useState } from "react";
+
+import { useHighlightOnFirstVisible } from "@/components/scan/useHighlightOnFirstVisible";
+import { getScanLocaleCopy, type DetailedScanHistoryItem, type MessageScanResult, type SupportedLocale } from "@/lib/scan";
 
 type UrlScanRightRailProps = {
   result: MessageScanResult | null;
   loading: boolean;
   onDownloadPrimaryReport: () => Promise<void>;
+  historyItems: DetailedScanHistoryItem[];
+  onRestoreHistory: (item: DetailedScanHistoryItem) => void;
 };
 
 type RailCopy = {
   surfaceMap: string;
+  plainLanguageSummary: string;
   scanDerivedTelemetry: string;
   inspectingEndpoint: string;
   telemetryReady: string;
   waitingForScan: string;
+  strongestSignal: string;
+  strongestSignalIdle: string;
+  strongestSignalPrefix: string;
+  structuralMeaning: string;
+  reputationMeaning: string;
+  destinationMeaning: string;
   host: string;
   signals: string;
   redFlags: string;
@@ -31,10 +43,17 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   if (locale === "vi") {
     return {
       surfaceMap: "Ban Do Be Mat Rui Ro",
+      plainLanguageSummary: "Noi URL hien tai co ve rui ro",
       scanDerivedTelemetry: "Tin hieu duoc tao tu ket qua quet hien tai",
       inspectingEndpoint: "Dang kiem tra diem den...",
       telemetryReady: "Tin hieu duoc tong hop tu URL hien tai",
       waitingForScan: "Cho ket qua quet URL",
+      strongestSignal: "Tin hieu manh nhat",
+      strongestSignalIdle: "Thuc hien quet de xem lop rui ro nao noi bat nhat.",
+      strongestSignalPrefix: "Phan lon rui ro hien tai den tu",
+      structuralMeaning: "Ban than lien ket co dau hieu bat thuong hoac giau y do lua dao.",
+      reputationMeaning: "Tin hieu tu danh tieng ben ngoai va co so du lieu phishing.",
+      destinationMeaning: "Dieu gi xay ra tren trang dich neu mo lien ket.",
       host: "Ten mien",
       signals: "Tin hieu",
       redFlags: "Dau Hieu URL",
@@ -52,10 +71,17 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   if (locale === "es") {
     return {
       surfaceMap: "Mapa de Superficie de Riesgo",
+      plainLanguageSummary: "Donde esta URL parece riesgosa",
       scanDerivedTelemetry: "Telemetria derivada del analisis actual",
       inspectingEndpoint: "Inspeccionando destino...",
       telemetryReady: "Senales resumidas desde esta URL",
       waitingForScan: "Esperando un analisis de URL",
+      strongestSignal: "Senal mas fuerte",
+      strongestSignalIdle: "Ejecuta un analisis para ver que capa destaca mas.",
+      strongestSignalPrefix: "La mayor parte del riesgo actual proviene de",
+      structuralMeaning: "El enlace en si parece inusual o enganoso.",
+      reputationMeaning: "Senales externas de confianza y bases de phishing.",
+      destinationMeaning: "Lo que hace la pagina de destino si se abre.",
       host: "Host",
       signals: "Senales",
       redFlags: "Alertas de URL",
@@ -73,10 +99,17 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   if (locale === "zh") {
     return {
       surfaceMap: "风险表面图",
+      plainLanguageSummary: "当前 URL 的风险主要来自哪里",
       scanDerivedTelemetry: "基于当前扫描结果生成的遥测",
       inspectingEndpoint: "正在检查目标...",
       telemetryReady: "当前 URL 的信号摘要",
       waitingForScan: "等待 URL 扫描结果",
+      strongestSignal: "最强信号",
+      strongestSignalIdle: "运行扫描后即可看到最突出的风险层。",
+      strongestSignalPrefix: "当前大部分风险来自",
+      structuralMeaning: "链接本身看起来异常或具有欺骗性。",
+      reputationMeaning: "外部信誉与钓鱼数据库信号。",
+      destinationMeaning: "如果打开链接，目标页面会做什么。",
       host: "主机",
       signals: "信号",
       redFlags: "URL 风险信号",
@@ -94,10 +127,17 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   if (locale === "ko") {
     return {
       surfaceMap: "위험 표면 맵",
+      plainLanguageSummary: "현재 URL에서 위험해 보이는 부분",
       scanDerivedTelemetry: "현재 스캔에서 계산된 신호",
       inspectingEndpoint: "대상 점검 중...",
       telemetryReady: "현재 URL에서 계산된 신호",
       waitingForScan: "URL 스캔 대기 중",
+      strongestSignal: "가장 강한 신호",
+      strongestSignalIdle: "스캔을 실행하면 가장 두드러진 위험 레이어를 볼 수 있습니다.",
+      strongestSignalPrefix: "현재 위험의 중심은",
+      structuralMeaning: "링크 자체가 비정상적이거나 속이려는 형태입니다.",
+      reputationMeaning: "외부 평판과 피싱 데이터베이스 신호입니다.",
+      destinationMeaning: "링크를 열었을 때 도착 페이지가 하는 행동입니다.",
       host: "호스트",
       signals: "신호",
       redFlags: "URL 위험 신호",
@@ -115,10 +155,17 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   if (locale === "tl") {
     return {
       surfaceMap: "Mapa ng Surface ng Panganib",
+      plainLanguageSummary: "Kung saan mukhang mapanganib ang URL na ito",
       scanDerivedTelemetry: "Telemetry na hango sa kasalukuyang scan",
       inspectingEndpoint: "Sinusuri ang destinasyon...",
       telemetryReady: "Mga signal mula sa kasalukuyang URL",
       waitingForScan: "Naghihintay ng URL scan",
+      strongestSignal: "Pinakamalakas na signal",
+      strongestSignalIdle: "Magpatakbo ng scan para makita kung aling risk layer ang pinaka kapansin-pansin.",
+      strongestSignalPrefix: "Karamihan ng kasalukuyang panganib ay galing sa",
+      structuralMeaning: "Ang mismong link ay mukhang kakaiba o mapanlinlang.",
+      reputationMeaning: "Panlabas na trust at phishing-database signals.",
+      destinationMeaning: "Kung ano ang ginagawa ng destination page kapag binuksan.",
       host: "Host",
       signals: "Mga signal",
       redFlags: "Mga Red Flag ng URL",
@@ -136,10 +183,17 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   if (locale === "fr") {
     return {
       surfaceMap: "Carte de Surface du Risque",
+      plainLanguageSummary: "Ou cette URL semble risquee",
       scanDerivedTelemetry: "Telemetrie derivee de l'analyse actuelle",
       inspectingEndpoint: "Inspection de la destination...",
       telemetryReady: "Signaux resumes pour cette URL",
       waitingForScan: "En attente d'une analyse URL",
+      strongestSignal: "Signal le plus fort",
+      strongestSignalIdle: "Lancez une analyse pour voir quelle couche de risque ressort le plus.",
+      strongestSignalPrefix: "La plus grande part du risque actuel vient de",
+      structuralMeaning: "Le lien lui-meme parait inhabituel ou trompeur.",
+      reputationMeaning: "Signaux de confiance externes et base de phishing.",
+      destinationMeaning: "Ce que fait la page de destination si elle est ouverte.",
       host: "Hote",
       signals: "Signaux",
       redFlags: "Signaux d'Alerte URL",
@@ -155,15 +209,22 @@ function getUrlRailCopy(locale: SupportedLocale): RailCopy {
   }
 
   return {
-    surfaceMap: "Threat Surface Map",
+    surfaceMap: "Link Risk Overview",
+    plainLanguageSummary: "Where this link looks risky",
     scanDerivedTelemetry: "Scan-derived telemetry from the current result",
     inspectingEndpoint: "Inspecting destination...",
-    telemetryReady: "Signals summarized from the current URL",
+    telemetryReady: "Risk signals summarized from this link",
     waitingForScan: "Waiting for a URL scan",
+    strongestSignal: "Strongest signal",
+    strongestSignalIdle: "Run a scan to see which risk layer stands out most.",
+    strongestSignalPrefix: "Most of the current concern comes from",
+    structuralMeaning: "The link itself looks unusual or deceptive.",
+    reputationMeaning: "External trust and phishing-database signals.",
+    destinationMeaning: "What the destination page does if opened.",
     host: "Host",
     signals: "Signals",
-    redFlags: "URL Red Flags",
-    noRedFlags: "No strong URL red flags",
+    redFlags: "What stands out",
+    noRedFlags: "No strong link red flags",
     noRedFlagsDetail: "This scan did not trigger strong URL heuristics, but you should still verify why you received this link before opening it from an unexpected message.",
     reportButton: "Download Full Report",
     surfaceBuckets: {
@@ -209,16 +270,12 @@ function bucketAccent(key: "structural" | "reputation" | "destination", score: n
   return "bg-[#d6e3ff]";
 }
 
-const SURFACE_POSITIONS = [
-  { left: 18, labelLeft: "left-[12%]" },
-  { left: 50, labelLeft: "left-[44%]" },
-  { left: 78, labelLeft: "left-[72%]" }
-];
-
-export function UrlScanRightRail({ result, loading, onDownloadPrimaryReport }: UrlScanRightRailProps) {
+export function UrlScanRightRail({ result, loading, onDownloadPrimaryReport, historyItems, onRestoreHistory }: UrlScanRightRailProps) {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const locale = result?.locale ?? "en";
   const copy = getUrlRailCopy(locale);
   const commonCopy = getScanLocaleCopy(locale);
+  const currentSessionItems = historyItems.slice(0, 6);
   const heuristicFindings = result?.raw.metadata?.heuristic_findings ?? [];
   const signalCount = heuristicFindings.length;
   const host =
@@ -238,9 +295,98 @@ export function UrlScanRightRail({ result, loading, onDownloadPrimaryReport }: U
     { key: "reputation", score: 0, finding_count: 0 },
     { key: "destination", score: 0, finding_count: 0 }
   ]) as Array<{ key: "structural" | "reputation" | "destination"; score: number; finding_count: number }>;
+  const highestBucket = [...mapBuckets].sort((left, right) => right.score - left.score)[0] ?? null;
+  const highestBucketLabel = highestBucket
+    ? highestBucket.key === "reputation"
+      ? copy.surfaceBuckets.reputation
+      : highestBucket.key === "destination"
+        ? copy.surfaceBuckets.destination
+        : copy.surfaceBuckets.structural
+    : null;
+  const bucketSummary = (bucket: (typeof mapBuckets)[number]) => {
+    if (bucket.key === "reputation") {
+      return copy.reputationMeaning;
+    }
+    if (bucket.key === "destination") {
+      return copy.destinationMeaning;
+    }
+    return copy.structuralMeaning;
+  };
+  const maxBucketScore = Math.max(...mapBuckets.map((bucket) => bucket.score), 1);
+  const redFlagsSessionKey = result
+    ? [result.raw.metadata?.history_id ?? "", result.riskScore, result.summary, result.likelyScamPattern, "redflags"].join("::")
+    : null;
+  const { ref: redFlagsRef, activeClassName: redFlagsHighlightClass } = useHighlightOnFirstVisible({
+    sessionKey: redFlagsSessionKey,
+    enabled: Boolean(result)
+  });
 
   return (
     <aside className="space-y-12">
+      {currentSessionItems.length > 1 ? (
+        <section className="animate-fade-up space-y-6" style={{ animationDelay: "90ms" }}>
+          <div className="space-y-2">
+            <h2 className="font-headline text-2xl font-bold tracking-tight text-vellum">Session History</h2>
+            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">
+              Current session snapshots
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((current) => !current)}
+              className="flex w-full items-center justify-between gap-4 border border-outline-variant/30 bg-surface-container-low px-5 py-4 text-left transition-colors hover:border-secondary/30 hover:bg-surface-container-high"
+            >
+              <span className="min-w-0">
+                <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">
+                  Current Session
+                </span>
+                <p className="mt-1 text-sm text-on-surface-variant">
+                  {currentSessionItems.length} saved URL scan snapshot{currentSessionItems.length === 1 ? "" : "s"} are available.
+                </p>
+              </span>
+              <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-vellum">
+                {historyOpen ? "Collapse" : "Expand"}
+              </span>
+            </button>
+
+            <div className={`grid overflow-hidden transition-all duration-500 ${historyOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+              <div className="min-h-0">
+                <div className="max-h-80 space-y-3 overflow-y-auto pt-2 pr-1">
+                  {currentSessionItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onRestoreHistory(item)}
+                      className="grid w-full gap-3 border border-outline-variant/20 bg-surface-container-low p-4 text-left transition-colors hover:border-secondary/30 hover:bg-surface-container-high sm:grid-cols-[minmax(0,1fr)_auto]"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">
+                          {item.scanType} · {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </p>
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-on-surface-variant">{item.snippet}</p>
+                      </div>
+                      <span
+                        className={`font-label text-[10px] font-bold uppercase ${
+                          item.riskLabel === "High Risk"
+                            ? "text-[#ffb4ab]"
+                            : item.riskLabel === "Suspicious"
+                              ? "text-secondary"
+                              : "text-[#d6e3ff]"
+                        }`}
+                      >
+                        {commonCopy.riskLabels[item.riskLabel]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className="animate-fade-up space-y-6" style={{ animationDelay: "120ms" }}>
         <div className="flex items-center justify-between">
           <h2 className="font-headline text-[32px] font-bold tracking-tight text-vellum">{copy.surfaceMap}</h2>
@@ -249,36 +395,47 @@ export function UrlScanRightRail({ result, loading, onDownloadPrimaryReport }: U
           </span>
         </div>
 
-        <div className="overflow-hidden border border-outline-variant/20 bg-surface-container-high">
-          <div className="relative aspect-[1.45] bg-[radial-gradient(circle_at_20%_20%,rgba(225,194,144,0.12),transparent_24%),radial-gradient(circle_at_78%_30%,rgba(185,199,228,0.08),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)]">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-25" />
-            <div className="absolute inset-x-6 top-6 flex items-center gap-2 border border-white/10 bg-black/25 px-3 py-2 backdrop-blur-md">
-              <span className={`h-2 w-2 ${loading ? "bg-secondary" : result ? "bg-primary" : "bg-outline-variant"}`} />
-              <span className="font-label text-[9px] font-bold uppercase tracking-[0.16em] text-vellum">
-                {loading ? copy.inspectingEndpoint : result ? copy.telemetryReady : copy.waitingForScan}
-              </span>
-            </div>
+        <div className="space-y-4 overflow-hidden border border-outline-variant/20 bg-surface-container-high p-5">
+          <div className="ghost-border bg-surface-container-lowest/65 p-4">
+            <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{copy.plainLanguageSummary}</p>
+            <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+              {loading
+                ? copy.inspectingEndpoint
+                : result && highestBucketLabel
+                  ? `${copy.strongestSignalPrefix} ${highestBucketLabel.toLowerCase()}.`
+                  : copy.strongestSignalIdle}
+            </p>
+          </div>
 
-            {mapBuckets.map((bucket, index) => {
-              const position = SURFACE_POSITIONS[index] ?? SURFACE_POSITIONS[0];
-              const top = Math.max(22, 72 - Math.min(bucket.score, 10) * 5);
+          <div className="space-y-3">
+            {mapBuckets.map((bucket) => {
               const label =
                 bucket.key === "reputation"
                   ? copy.surfaceBuckets.reputation
                   : bucket.key === "destination"
                     ? copy.surfaceBuckets.destination
                     : copy.surfaceBuckets.structural;
+              const width = `${Math.max(10, Math.round((bucket.score / maxBucketScore) * 100))}%`;
 
               return (
-                <div key={bucket.key}>
-                  <div
-                    className={`absolute h-2.5 w-2.5 shadow-[0_0_18px_rgba(255,255,255,0.18)] ${bucketAccent(bucket.key, bucket.score)}`}
-                    style={{ left: `${position.left}%`, top: `${top}%` }}
-                  />
-                  <div
-                    className={`absolute top-[78%] border border-outline-variant/20 bg-black/20 px-2 py-1 font-label text-[9px] font-bold uppercase tracking-[0.14em] text-vellum ${position.labelLeft}`}
-                  >
-                    {label}: {bucket.score}
+                <div key={bucket.key} className="ghost-border bg-surface-container-low p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={`h-3 w-3 shrink-0 ${bucketAccent(bucket.key, bucket.score)}`} />
+                      <div className="min-w-0">
+                        <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{label}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">{bucketSummary(bucket)}</p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-headline text-2xl font-bold text-vellum">{bucket.score}</p>
+                      <p className="font-label text-[9px] uppercase tracking-[0.14em] text-outline">
+                        {bucket.finding_count} finding{bucket.finding_count === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 h-2 w-full overflow-hidden bg-surface-container-highest">
+                    <div className={`${bucketAccent(bucket.key, bucket.score)} h-full transition-all duration-500`} style={{ width }} />
                   </div>
                 </div>
               );
@@ -298,7 +455,11 @@ export function UrlScanRightRail({ result, loading, onDownloadPrimaryReport }: U
         </div>
       </section>
 
-      <section className="animate-fade-up space-y-6" style={{ animationDelay: "180ms" }}>
+      <section
+        ref={redFlagsRef}
+        className={`scan-card-highlightable animate-fade-up space-y-6 ${redFlagsHighlightClass}`}
+        style={{ animationDelay: "180ms" }}
+      >
         <h2 className="font-headline text-[32px] font-bold tracking-tight text-vellum">{copy.redFlags}</h2>
 
         {redFlags.length > 0 ? (

@@ -11,72 +11,60 @@ import {
   getConsensusStatusLabel,
   getDecisionPanelCopy
 } from "@/components/scan/DecisionPanels";
+import { useHighlightOnFirstVisible } from "@/components/scan/useHighlightOnFirstVisible";
 import {
   DestinationInspectionCard,
   EvidenceBucketsCard,
   getUrlResultCopy
 } from "@/components/scan/UrlScanResults";
-import {
-  getScanLocaleCopy,
-  resolveSupportedLocale,
-  type DetailedScanHistoryItem,
-  type MessageScanResult,
-  type SupportedLocale
-} from "@/lib/scan";
+import { getScanLocaleCopy, resolveSupportedLocale, type MessageScanResult, type SupportedLocale } from "@/lib/scan";
 
 type ScreenshotScanResultsProps = {
   result: MessageScanResult | null;
   loading: boolean;
-  historyItems: DetailedScanHistoryItem[];
   onCopyReport: () => Promise<void>;
   onDownloadReport: (format: "txt" | "md") => Promise<void>;
-  onRestoreHistory: (item: DetailedScanHistoryItem) => void;
   onRescanEditedText: (text: string) => Promise<void>;
   reportBusy: "copy" | "txt" | "md" | null;
   rescanBusy: boolean;
   rescanAvailable: boolean;
+  decisionHighlightKey?: number;
 };
 
 function getScreenshotResultCopy(locale: SupportedLocale) {
   const english = {
-    summary: "Summary",
-    threatBrief: "Threat Brief",
-    extractedContent: "Extracted Content",
-    ocrPreview: "OCR Preview",
-    forwardToIt: "Forward To IT",
+    summary: "Risk Summary",
+    threatBrief: "What this means",
+    extractedContent: "What was read from the screenshot",
+    ocrPreview: "Text read from the image",
+    forwardToIt: "Save Or Share Report",
     sessionHistory: "Session History",
-    recentScans: "Recent Scans",
-    currentSession: "Current Session",
-    savedSnapshots: (count: number) => `${count} saved scan snapshots are available.`,
-    expand: "Expand",
-    collapse: "Collapse",
-    liveSession: "Live session",
-    ocrDualModel: "OCR + dual model",
-    dualModelReview: "Dual-model review",
-    ocrAi: "OCR + AI",
-    aiAssisted: "AI assisted",
-    heuristicOnly: "Heuristic only",
+    ocrDualModel: "OCR + two-model review",
+    dualModelReview: "Two-model review",
+    ocrAi: "OCR + AI review",
+    aiAssisted: "AI-assisted",
+    heuristicOnly: "Local review only",
     qrCodes: "Detected QR Codes",
-    qrReview: "Decoded Payload Review",
-    qrUrl: "URL payload",
-    qrText: "Text payload",
-    inspected: "URL inspected",
-    notInspected: "Not inspected",
-    ocrConfidence: "OCR Confidence",
-    visionQuality: "Vision Quality",
-    visualCues: "Visual Cues",
-    screenshotSignals: "Screenshot-Specific Signals",
-    layoutSummary: "Layout Summary",
-    ocrWarnings: "OCR Warnings",
+    qrReview: "What the QR codes lead to",
+    qrUrl: "Link found in QR code",
+    qrText: "Text found in QR code",
+    inspected: "Link checked",
+    notInspected: "Not checked",
+    ocrConfidence: "Text-read confidence",
+    visionQuality: "Image quality",
+    visualCues: "What stood out on screen",
+    screenshotSignals: "Screenshot clues",
+    layoutSummary: "What the screenshot appears to show",
+    ocrWarnings: "Text-read limits",
     editExtractedText: "Edit Extracted Text",
-    refineAndRescan: "Refine And Rescan",
-    editableHint: "Correct OCR mistakes here, then rescan while keeping the screenshot and QR context.",
+    refineAndRescan: "Correct And Rescan",
+    editableHint: "Fix any text-reading mistakes here, then run the screenshot review again while keeping the same image and QR context.",
     rescanEditedText: "Rescan With Edited Text",
     rescanning: "Rescanning...",
     resetText: "Reset Text",
-    manualOverride: "Manual override active",
-    originalOcr: "Original OCR",
-    noVisualCues: "No additional screenshot-specific visual cues were detected."
+    manualOverride: "Using your corrected text",
+    originalOcr: "Original text read",
+    noVisualCues: "CyberCoach did not see extra visual warning signs beyond the extracted text."
   };
 
   if (locale === "vi") {
@@ -261,17 +249,27 @@ function ResultShell({
   eyebrow,
   children,
   className = "",
-  delay = 0
+  delay = 0,
+  highlightSessionKey = null,
+  highlightEnabled = false
 }: {
   title: string;
   eyebrow: string;
   children: ReactNode;
   className?: string;
   delay?: number;
+  highlightSessionKey?: string | null;
+  highlightEnabled?: boolean;
 }) {
+  const { ref, activeClassName } = useHighlightOnFirstVisible({
+    sessionKey: highlightSessionKey,
+    enabled: highlightEnabled
+  });
+
   return (
     <section
-      className={`ghost-border animate-fade-up bg-surface-container-low p-8 ${className}`}
+      ref={ref}
+      className={`ghost-border scan-card-highlightable animate-fade-up bg-surface-container-low p-8 ${activeClassName} ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">{eyebrow}</p>
@@ -307,16 +305,16 @@ function PlaceholderFeatures() {
     <section className="grid grid-cols-12 gap-6 animate-fade-up">
       <div className="col-span-12 bg-primary-container p-8 md:col-span-6">
         <ShieldCheckIcon className="h-8 w-8 text-secondary" />
-        <h3 className="mt-6 font-headline text-2xl font-bold tracking-tight text-vellum">Upload or Capture</h3>
+        <h3 className="mt-6 font-headline text-2xl font-bold tracking-tight text-vellum">Add a screenshot</h3>
         <p className="mt-4 max-w-sm text-sm leading-relaxed text-on-primary-container">
-          Drag in a screenshot, browse for an image file, or take a fresh photo from your device to start the vision scan.
+          Drag in a screenshot, browse for an image file, or take a photo from your device to start the review.
         </p>
       </div>
       <div className="col-span-12 bg-surface-container-high p-8 md:col-span-6">
         <CheckCircleIcon className="h-8 w-8 text-secondary" />
-        <h3 className="mt-6 font-headline text-2xl font-bold tracking-tight text-vellum">Vision + Guidance</h3>
+        <h3 className="mt-6 font-headline text-2xl font-bold tracking-tight text-vellum">Text + guidance</h3>
         <p className="mt-4 max-w-sm text-sm leading-relaxed text-on-surface-variant">
-          CyberCoach extracts visible text, runs preserved phishing heuristics, and returns the same guidance/report flow as the original app.
+          CyberCoach reads the visible text, checks for warning signs, and returns the same clear guidance and report flow as the rest of the scan suite.
         </p>
       </div>
     </section>
@@ -388,18 +386,6 @@ function analysisModeLabel(result: MessageScanResult, locale: SupportedLocale) {
     return screenshotCopy.aiAssisted;
   }
   return screenshotCopy.heuristicOnly;
-}
-
-function formatHistoryTime(isoDate: string, locale: SupportedLocale) {
-  const date = new Date(isoDate);
-  if (Number.isNaN(date.getTime())) {
-    return getScreenshotResultCopy(locale).liveSession;
-  }
-  return date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
 }
 
 function looksLikeUrl(value: string) {
@@ -538,26 +524,43 @@ function VisualSignalsCard({ result, locale }: { result: MessageScanResult; loca
 export function ScreenshotScanResults({
   result,
   loading,
-  historyItems,
   onCopyReport,
   onDownloadReport,
-  onRestoreHistory,
   onRescanEditedText,
   reportBusy,
   rescanBusy,
-  rescanAvailable
+  rescanAvailable,
+  decisionHighlightKey = 0
 }: ScreenshotScanResultsProps) {
   const copy = useMemo(() => getScanLocaleCopy(result?.locale ?? "en"), [result?.locale]);
   const decisionCopy = useMemo(() => getDecisionPanelCopy(result?.locale ?? "en"), [result?.locale]);
   const screenshotCopy = useMemo(() => getScreenshotResultCopy(result?.locale ?? "en"), [result?.locale]);
   const urlCopy = useMemo(() => getUrlResultCopy(result?.locale ?? "en"), [result?.locale]);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [editableExtractedText, setEditableExtractedText] = useState("");
+  const [decisionHighlightActive, setDecisionHighlightActive] = useState(false);
   const extractedText = result?.screenshotOcr?.analysisText ?? result?.screenshotOcr?.extractedText ?? "";
+  const highlightSessionKey = result
+    ? [result.raw.metadata?.history_id ?? "", result.riskScore, result.summary, result.likelyScamPattern].join("::")
+    : null;
 
   useEffect(() => {
     setEditableExtractedText(extractedText);
   }, [extractedText, result?.raw.metadata?.history_id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || decisionHighlightKey === 0) {
+      return;
+    }
+
+    setDecisionHighlightActive(true);
+    const timeout = window.setTimeout(() => {
+      setDecisionHighlightActive(false);
+    }, 1700);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [decisionHighlightKey]);
 
   if (loading) {
     return <LoadingResults />;
@@ -567,15 +570,19 @@ export function ScreenshotScanResults({
     return <PlaceholderFeatures />;
   }
 
-  const currentSessionItems = historyItems.slice(0, 6);
-  const showHistory = currentSessionItems.length > 1;
   const locale = resolveSupportedLocale(result.raw.metadata?.language?.toString() ?? result.locale);
   const originalOcrText = result.screenshotOcr?.originalExtractedText ?? result.screenshotOcr?.extractedText ?? "";
   const canRescanEditedText = rescanAvailable && editableExtractedText.trim().length > 0 && !rescanBusy;
 
   return (
     <section className="grid grid-cols-12 gap-6">
-      <ResultShell title={result.riskLabelDisplay} eyebrow={copy.result.riskSummary} className="col-span-12 md:col-span-5">
+      <ResultShell
+        title={result.riskLabelDisplay}
+        eyebrow={copy.result.riskSummary}
+        className="col-span-12 md:col-span-5"
+        highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:risk` : null}
+        highlightEnabled
+      >
         <div className="space-y-5">
           <div className={`font-headline text-5xl font-extrabold tracking-editorial ${RiskAccent({ label: result.riskLabel })}`}>
             {result.riskScore}
@@ -601,15 +608,25 @@ export function ScreenshotScanResults({
         </div>
       </ResultShell>
 
-      <ResultShell title={copy.result.recommendedActions} eyebrow={copy.result.whatToDoNext} className="col-span-12 md:col-span-7" delay={60}>
+      <ResultShell
+        title={copy.result.recommendedActions}
+        eyebrow={copy.result.whatToDoNext}
+        className="col-span-12 md:col-span-7"
+        delay={60}
+        highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:actions` : null}
+        highlightEnabled
+      >
         <RecommendedActionsCard actions={result.recommendedActions} />
       </ResultShell>
 
-      <ResultShell title={screenshotCopy.summary} eyebrow={screenshotCopy.threatBrief} className="col-span-12 md:col-span-6" delay={120}>
-        <p className="text-sm leading-relaxed text-on-surface">{result.summary}</p>
-      </ResultShell>
-
-      <ResultShell title={copy.result.keyFindings} eyebrow={copy.result.patternScan} className="col-span-12 md:col-span-6" delay={180}>
+      <ResultShell
+        title={copy.result.keyFindings}
+        eyebrow={copy.result.patternScan}
+        className="col-span-12"
+        delay={120}
+        highlightSessionKey={highlightSessionKey ? `${highlightSessionKey}:findings` : null}
+        highlightEnabled
+      >
         <div className="space-y-4">
           {result.topReasons.map((reason, index) => (
             <div key={reason} className="flex gap-4">
@@ -623,7 +640,12 @@ export function ScreenshotScanResults({
       </ResultShell>
 
       {result.technicalDetails.length > 0 ? (
-        <ResultShell title={copy.result.technicalDetails} eyebrow={copy.result.triggeredRules} className="col-span-12" delay={240}>
+        <ResultShell
+          title={copy.result.technicalDetails}
+          eyebrow={copy.result.triggeredRules}
+          className={`col-span-12 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+          delay={180}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             {result.technicalDetails.map((detail) => (
               <div key={`${detail.label}-${detail.detail}`} className="ghost-border bg-surface-container-lowest/55 p-4">
@@ -640,41 +662,61 @@ export function ScreenshotScanResults({
         </ResultShell>
       ) : null}
 
+      {extractedText ? (
+        <ResultShell title={screenshotCopy.extractedContent} eyebrow={screenshotCopy.ocrPreview} className="col-span-12" delay={220}>
+          <div className="ghost-border bg-surface-container-lowest/60 p-5">
+            <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words font-mono text-sm leading-relaxed text-on-surface">
+              {extractedText}
+            </pre>
+          </div>
+        </ResultShell>
+      ) : null}
+
       {result.screenshotOcr?.qrPayloads.length ? (
-        <ResultShell title={screenshotCopy.qrCodes} eyebrow={screenshotCopy.qrReview} className="col-span-12" delay={246}>
+        <ResultShell title={screenshotCopy.qrCodes} eyebrow={screenshotCopy.qrReview} className="col-span-12" delay={240}>
           <QrCodesCard result={result} locale={locale} />
         </ResultShell>
       ) : null}
 
       {result.screenshotOcr ? (
-        <ResultShell title={screenshotCopy.ocrConfidence} eyebrow={screenshotCopy.visionQuality} className="col-span-12 md:col-span-4" delay={248}>
+        <ResultShell title={screenshotCopy.ocrConfidence} eyebrow={screenshotCopy.visionQuality} className="col-span-12 md:col-span-4" delay={250}>
           <OcrConfidenceCard result={result} locale={locale} />
         </ResultShell>
       ) : null}
 
       {result.screenshotOcr ? (
-        <ResultShell title={screenshotCopy.visualCues} eyebrow={screenshotCopy.screenshotSignals} className="col-span-12 md:col-span-8" delay={250}>
+        <ResultShell title={screenshotCopy.visualCues} eyebrow={screenshotCopy.screenshotSignals} className="col-span-12 md:col-span-8" delay={255}>
           <VisualSignalsCard result={result} locale={locale} />
         </ResultShell>
       ) : null}
 
       {result.evidenceBuckets.length > 0 ? (
-        <ResultShell title={urlCopy.evidenceBuckets} eyebrow={urlCopy.riskLayers} className="col-span-12 2xl:col-span-4" delay={255}>
+        <ResultShell title={urlCopy.evidenceBuckets} eyebrow={urlCopy.riskLayers} className="col-span-12" delay={260}>
           <EvidenceBucketsCard result={result} />
         </ResultShell>
       ) : null}
 
       {result.urlInspection.length > 0 ? (
-        <ResultShell title={urlCopy.destinationInspection} eyebrow={urlCopy.liveDestinationReview} className="col-span-12 2xl:col-span-8" delay={265}>
+        <ResultShell title={urlCopy.destinationInspection} eyebrow={urlCopy.liveDestinationReview} className="col-span-12" delay={270}>
           <DestinationInspectionCard result={result} />
         </ResultShell>
       ) : null}
 
-      <ResultShell title={decisionCopy.titles.decisionTrace} eyebrow={decisionCopy.titles.consensusEngine} className="col-span-12 md:col-span-4" delay={270}>
+      <ResultShell
+        title={decisionCopy.titles.decisionTrace}
+        eyebrow={decisionCopy.titles.consensusEngine}
+        className={`col-span-12 md:col-span-4 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+        delay={270}
+      >
         <DecisionSummaryPanel result={result} />
       </ResultShell>
 
-      <ResultShell title={decisionCopy.titles.modelAssessments} eyebrow={decisionCopy.titles.crossModelReview} className="col-span-12 md:col-span-8" delay={285}>
+      <ResultShell
+        title={decisionCopy.titles.modelAssessments}
+        eyebrow={decisionCopy.titles.crossModelReview}
+        className={`col-span-12 md:col-span-8 ${decisionHighlightActive ? "scan-trace-spotlight" : ""}`}
+        delay={285}
+      >
         <ModelAssessmentsPanel result={result} />
       </ResultShell>
 
@@ -743,7 +785,7 @@ export function ScreenshotScanResults({
         </ResultShell>
       ) : null}
 
-      <ResultShell title={copy.result.reportActions} eyebrow={screenshotCopy.forwardToIt} className="col-span-12 xl:col-span-6" delay={480}>
+      <ResultShell title={copy.result.reportActions} eyebrow={screenshotCopy.forwardToIt} className="col-span-12 xl:col-span-8" delay={480}>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <button type="button" onClick={() => void onCopyReport()} className="editorial-button min-h-[72px] justify-between px-5 py-4">
             <span className="max-w-[14ch] text-left">{reportBusy === "copy" ? copy.result.copying : copy.result.copyReport}</span>
@@ -759,61 +801,6 @@ export function ScreenshotScanResults({
           </button>
         </div>
       </ResultShell>
-
-      {showHistory ? (
-        <ResultShell title={screenshotCopy.sessionHistory} eyebrow={screenshotCopy.recentScans} className="col-span-12 xl:col-span-6" delay={540}>
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={() => setHistoryOpen((current) => !current)}
-              className="flex w-full items-center justify-between gap-4 border border-outline-variant/30 bg-surface-container-lowest/60 px-5 py-4 text-left transition-colors hover:border-secondary/30 hover:bg-surface-container"
-            >
-              <span className="min-w-0">
-                <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">
-                  {screenshotCopy.currentSession}
-                </span>
-                <p className="mt-1 text-sm text-on-surface-variant">{screenshotCopy.savedSnapshots(currentSessionItems.length)}</p>
-              </span>
-              <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-vellum">
-                {historyOpen ? screenshotCopy.collapse : screenshotCopy.expand}
-              </span>
-            </button>
-
-            <div className={`grid overflow-hidden transition-all duration-500 ${historyOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-              <div className="min-h-0">
-                <div className="max-h-80 space-y-3 overflow-y-auto pt-2 pr-1">
-                  {currentSessionItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onRestoreHistory(item)}
-                      className="grid w-full gap-3 border border-outline-variant/20 bg-surface-container-low p-4 text-left transition-colors hover:border-secondary/30 hover:bg-surface-container-high sm:grid-cols-[minmax(0,1fr)_auto]"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">
-                          {item.scanType} · {formatHistoryTime(item.createdAt, result.locale)}
-                        </p>
-                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-on-surface-variant">{item.snippet}</p>
-                      </div>
-                      <span
-                        className={`font-label text-[10px] font-bold uppercase ${
-                          item.riskLabel === "High Risk"
-                            ? "text-[#ffb4ab]"
-                            : item.riskLabel === "Suspicious"
-                              ? "text-secondary"
-                              : "text-[#d6e3ff]"
-                        }`}
-                      >
-                        {getScanLocaleCopy(locale).riskLabels[item.riskLabel]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </ResultShell>
-      ) : null}
     </section>
   );
 }

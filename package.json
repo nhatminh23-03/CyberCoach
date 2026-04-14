@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:backend": ".venv/bin/python -m pytest",
+    "test:frontend": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
@@ -14,12 +18,18 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "22.13.5",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
+    "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "10.4.20",
+    "jsdom": "^29.0.2",
     "postcss": "8.5.3",
     "tailwindcss": "3.4.17",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "vitest": "^4.1.4"
   }
 }

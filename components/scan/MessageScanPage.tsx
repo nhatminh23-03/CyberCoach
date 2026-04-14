@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LockIcon } from "@/components/home/icons";
 import { Header } from "@/components/home/Header";
 import { ScanFooter } from "@/components/scan/ScanFooter";
+import { ResultDiscoveryCta, useScanResultDiscovery } from "@/components/scan/ResultDiscovery";
 import { ScanResults } from "@/components/scan/ScanResults";
 import { ScanRightRail } from "@/components/scan/ScanRightRail";
 import { ScanSidebar } from "@/components/scan/ScanSidebar";
@@ -27,6 +28,7 @@ import {
 type MessageScanPageProps = {
   initialQuery: string;
   initialView: string;
+  initialAutoRun?: boolean;
 };
 
 const STORAGE_KEY = "cybercoach:quick-scan-input";
@@ -48,7 +50,7 @@ const recentComingSoon = {
   document: "Document Scan is coming soon. Message Scan remains the active intelligence module."
 } as const;
 
-export function MessageScanPage({ initialQuery, initialView }: MessageScanPageProps) {
+export function MessageScanPage({ initialQuery, initialView, initialAutoRun = false }: MessageScanPageProps) {
   const [message, setMessage] = useState(initialQuery);
   const [privacyMode, setPrivacyMode] = useState(true);
   const [language, setLanguage] = useState("en");
@@ -63,6 +65,14 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
   const [activeSampleId, setActiveSampleId] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<ScanHistoryItem[]>([]);
   const [intelFeedItems, setIntelFeedItems] = useState<IntelFeedItem[]>([]);
+  const autoRunRef = useRef<string | null>(null);
+  const {
+    resultsSectionRef,
+    showSeeResultsCta,
+    scrollToResults,
+    resultSpotlightActive,
+    traceHighlightKey
+  } = useScanResultDiscovery({ result, loading });
 
   useEffect(() => {
     if (initialQuery) {
@@ -76,6 +86,21 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
       setMessage(saved);
     }
   }, [initialQuery]);
+
+  useEffect(() => {
+    if (!initialAutoRun || typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("autorun") && !url.searchParams.has("source")) {
+      return;
+    }
+
+    url.searchParams.delete("autorun");
+    url.searchParams.delete("source");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [initialAutoRun]);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,8 +194,8 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
     }
   }
 
-  async function handleExecuteScan() {
-    const trimmed = message.trim();
+  const handleExecuteScan = useCallback(async (overrideMessage?: string) => {
+    const trimmed = (overrideMessage ?? message).trim();
     if (!trimmed) {
       setError("Paste a suspicious message before executing a scan.");
       return;
@@ -207,7 +232,17 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
     } finally {
       setLoading(false);
     }
-  }
+  }, [language, message, privacyMode]);
+
+  useEffect(() => {
+    const trimmed = initialQuery.trim();
+    if (!initialAutoRun || !trimmed || autoRunRef.current === trimmed) {
+      return;
+    }
+
+    autoRunRef.current = trimmed;
+    void handleExecuteScan(trimmed);
+  }, [handleExecuteScan, initialAutoRun, initialQuery]);
 
   async function handleCopyReport() {
     if (!result) {
@@ -245,25 +280,24 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
     <>
       <Header active="Scans" />
 
-      <main className="mx-auto grid max-w-[1440px] grid-cols-12 gap-8 px-4 pb-16 pt-20 sm:px-6 sm:pt-24 lg:px-8 xl:gap-12">
+      <main className="mx-auto grid max-w-[1440px] grid-cols-12 gap-6 px-4 pb-14 pt-16 sm:px-6 sm:pb-16 sm:pt-20 lg:gap-8 lg:px-8 lg:pt-24 xl:gap-12">
         <ScanSidebar activeItem="message" />
 
-        <div className="col-span-12 space-y-10 xl:col-span-6 xl:space-y-12">
+        <div className="col-span-12 space-y-8 lg:space-y-10 xl:col-span-6 xl:space-y-12">
           <section className="animate-fade-up space-y-4">
             <div className="flex items-center space-x-3">
               <span className="h-px w-12 bg-secondary" />
               <span className="font-label text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
-                Threat Neutralization
+                Message Review
               </span>
             </div>
 
             <h1 className="max-w-2xl font-headline text-4xl font-extrabold leading-none tracking-editorial text-on-surface sm:text-5xl lg:text-6xl">
-              MESSAGE <span className="text-secondary">INTELLIGENCE</span> SCAN.
+              MESSAGE <span className="text-secondary">SAFETY</span> CHECK.
             </h1>
 
             <p className="max-w-xl pt-2 text-base leading-relaxed text-on-surface-variant sm:pt-4 sm:text-lg">
-              Deploy deep-heuristic analysis to identify linguistic patterns of deception, phishing vectors, and
-              malicious link redirection.
+              Paste a suspicious message to check for pressure, impersonation, risky links, and other signs that it may not be trustworthy.
             </p>
           </section>
 
@@ -302,7 +336,7 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
               <div className="group flex items-center justify-between border border-outline-variant/20 bg-surface-container-low p-6 transition-all hover:border-secondary/30">
                 <div>
                   <span className="mb-1 block font-label text-[10px] uppercase tracking-widest text-on-primary-container">
-                    Linguistic Engine
+                    Review Language
                   </span>
                   <span className="font-headline font-bold text-on-surface">Language</span>
                 </div>
@@ -325,14 +359,14 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
 
             <div className="group relative">
               <label className="mb-4 block font-label text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container">
-                Suspicious Payload Input
+                Message To Review
               </label>
 
               <div className="relative border-l-2 border-secondary bg-surface-container-lowest p-5 transition-all focus-within:bg-surface-container sm:p-6 lg:p-8">
                 <textarea
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
-                  placeholder="Paste suspicious message (SMS, WhatsApp, Email) here"
+                  placeholder="Paste a suspicious text, email, or chat message here"
                   className="min-h-[220px] w-full resize-none border-none bg-transparent pr-0 text-lg text-on-surface placeholder:text-outline/40 focus:outline-none sm:min-h-[240px] sm:text-xl md:pr-48"
                 />
 
@@ -348,7 +382,7 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
                       loading ? "animate-soft-pulse opacity-80" : ""
                     }`}
                   >
-                    {loading ? "Scanning..." : "Execute Scan"}
+                    {loading ? "Checking..." : "Check Message"}
                   </button>
                 </div>
               </div>
@@ -358,8 +392,8 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
               <LockIcon className="h-4 w-4 shrink-0 text-secondary" />
               <span>
                 {privacyMode
-                  ? "Nothing is stored. Privacy Mode is active and sensitive details can be redacted before model analysis."
-                  : "Nothing is stored. Your scan is analyzed ephemerally during this session."}
+                  ? "Nothing is stored by default. Privacy Mode can redact sensitive details before the final review."
+                  : "Nothing is stored by default. This message is reviewed only for the current session."}
               </span>
             </div>
 
@@ -376,17 +410,25 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
             ) : null}
           </section>
 
-          <ScanResults
-            result={result}
-            loading={loading}
-            onCopyReport={handleCopyReport}
-            onDownloadReport={handleDownloadReport}
-            reportBusy={reportBusy}
-            notice={viewNotice}
-          />
+          <div
+            ref={resultsSectionRef}
+            className={`scroll-mt-28 border border-transparent transition-all duration-500 ${
+              resultSpotlightActive ? "scan-results-spotlight" : ""
+            }`}
+          >
+            <ScanResults
+              result={result}
+              loading={loading}
+              onCopyReport={handleCopyReport}
+              onDownloadReport={handleDownloadReport}
+              reportBusy={reportBusy}
+              notice={viewNotice}
+              decisionHighlightKey={traceHighlightKey}
+            />
+          </div>
         </div>
 
-        <div className="col-span-12 space-y-8 xl:col-span-4 xl:self-start">
+        <div className="col-span-12 space-y-6 lg:space-y-8 xl:col-span-4 xl:self-start">
           <ScanSupportPanels
             samples={samples}
             randomRealPhish={randomRealPhish}
@@ -403,6 +445,10 @@ export function MessageScanPage({ initialQuery, initialView }: MessageScanPagePr
           />
         </div>
       </main>
+
+      {showSeeResultsCta && result ? (
+        <ResultDiscoveryCta onClick={scrollToResults} />
+      ) : null}
 
       <ScanFooter />
     </>

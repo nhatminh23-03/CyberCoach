@@ -2,14 +2,24 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 
-from ...models.requests import MessageScanRequest, UrlScanRequest
+from ...models.requests import MessageScanRequest, UrlScanRequest, VoiceSessionStartRequest, VoiceSessionUpdateRequest
 from ...models.responses import ScanResponse, UrlPrecheckResponse
 from ...services.heuristics import build_url_precheck, get_message_samples, get_random_real_phish_sample
 from ...services.history import serialize_history_entries
-from ...services.analyzer import analyze_message, analyze_screenshot, analyze_url
+from ...services.analyzer import (
+    analyze_document,
+    analyze_message,
+    analyze_voice_recording,
+    analyze_screenshot,
+    analyze_url,
+    analyze_voice_session_update,
+    finalize_voice_session,
+    start_voice_session,
+)
 from ...services.llm import resolve_llm_config
+from ...services.voice_media import voice_media_transcription_available
 
 
 router = APIRouter(prefix="/scan", tags=["scan"])
@@ -39,6 +49,10 @@ def scan_capabilities() -> dict[str, object]:
         "screenshot_requires_api_key": True,
         "llm_provider": llm_config.provider if llm_config.api_key else None,
         "llm_model": llm_config.model if llm_config.api_key else None,
+        "voice_live_browser_mode": True,
+        "voice_live_streaming_available": True,
+        "voice_recording_upload_available": True,
+        "voice_recording_auto_transcription_available": voice_media_transcription_available(),
     }
 
 
@@ -105,3 +119,192 @@ async def scan_screenshot(
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Screenshot scan failed: {exc}")
+
+
+@router.post("/document", response_model=ScanResponse)
+async def scan_document(
+    file: UploadFile = File(...),
+    language: str = Form("en"),
+    privacy_mode: bool = Form(True),
+) -> ScanResponse:
+    """Analyze a suspicious document by extracting text, links, and document metadata first."""
+    try:
+        file_bytes = await file.read()
+        if not file_bytes:
+            raise ValueError("Uploaded document is empty.")
+        return analyze_document(
+            file_bytes,
+            filename=file.filename or "uploaded-document",
+            media_type=file.content_type or "application/octet-stream",
+            language=language,
+            privacy_mode=privacy_mode,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Document scan failed: {exc}")
+
+
+@router.post("/voice/start")
+def start_voice(payload: VoiceSessionStartRequest) -> dict[str, object]:
+    """Create an ephemeral live-call vishing session."""
+    try:
+        return start_voice_session(language=payload.language, privacy_mode=payload.privacy_mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Voice session start failed: {exc}")
+
+
+@router.post("/voice/update", response_model=ScanResponse)
+def update_voice(payload: VoiceSessionUpdateRequest) -> ScanResponse:
+    """Analyze the current transcript snapshot for an in-progress call."""
+    try:
+        return analyze_voice_session_update(
+            session_id=payload.session_id,
+            transcript_text=payload.transcript_text,
+            transcript_segments=[item.model_dump() for item in payload.transcript_segments],
+            voice_signals=[item.model_dump() for item in payload.voice_signals],
+            elapsed_seconds=payload.elapsed_seconds,
+            allow_ai=payload.include_ai,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Voice session update failed: {exc}")
+
+
+@router.post("/voice/finalize", response_model=ScanResponse)
+def finalize_voice(payload: VoiceSessionUpdateRequest) -> ScanResponse:
+    """Finalize a live-call review into a normal CyberCoach report payload."""
+    try:
+        return finalize_voice_session(
+            session_id=payload.session_id,
+            transcript_text=payload.transcript_text,
+            transcript_segments=[item.model_dump() for item in payload.transcript_segments],
+            voice_signals=[item.model_dump() for item in payload.voice_signals],
+            elapsed_seconds=payload.elapsed_seconds,
+            allow_ai=payload.include_ai,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Voice session finalization failed: {exc}")
+
+
+@router.post("/voice/upload", response_model=ScanResponse)
+async def scan_voice_upload(
+    file: UploadFile = File(...),
+    language: str = Form("en"),
+    privacy_mode: bool = Form(True),
+    transcript_override_text: str = Form(""),
+) -> ScanResponse:
+    """Analyze an uploaded voicemail or suspicious call recording."""
+    try:
+        file_bytes = await file.read()
+        if not file_bytes:
+            raise ValueError("Uploaded recording is empty.")
+        return analyze_voice_recording(
+            file_bytes,
+            filename=file.filename or "uploaded-voicemail",
+            media_type=file.content_type or "application/octet-stream",
+            language=language,
+            privacy_mode=privacy_mode,
+            transcript_override=transcript_override_text,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Voice recording scan failed: {exc}")
+
+
+@router.websocket("/voice/ws")
+async def voice_stream(websocket: WebSocket) -> None:
+    """Stream rolling voice-session analysis over a websocket for lower-latency updates."""
+    await websocket.accept()
+    await websocket.send_json({"type": "ready"})
+
+    try:
+        while True:
+            raw_message = await websocket.receive_json()
+            if not isinstance(raw_message, dict):
+                await websocket.send_json({"type": "error", "detail": "Voice stream messages must be JSON objects."})
+                continue
+
+            message_type = str(raw_message.get("type") or "update").strip().lower()
+            request_id = raw_message.get("request_id")
+
+            if message_type == "ping":
+                await websocket.send_json({"type": "pong", "request_id": request_id})
+                continue
+
+            if message_type not in {"update", "finalize"}:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "detail": f'Unsupported voice stream message type "{message_type}".',
+                        "request_id": request_id,
+                    }
+                )
+                continue
+
+            try:
+                payload = VoiceSessionUpdateRequest(
+                    session_id=str(raw_message.get("session_id") or ""),
+                    transcript_text=str(raw_message.get("transcript_text") or ""),
+                    transcript_segments=list(raw_message.get("transcript_segments") or []),
+                    voice_signals=list(raw_message.get("voice_signals") or []),
+                    elapsed_seconds=int(raw_message.get("elapsed_seconds") or 0),
+                    include_ai=bool(raw_message.get("include_ai", False)),
+                )
+            except Exception as exc:
+                await websocket.send_json({"type": "error", "detail": str(exc), "request_id": request_id})
+                continue
+
+            try:
+                result = (
+                    finalize_voice_session(
+                        session_id=payload.session_id,
+                        transcript_text=payload.transcript_text,
+                        transcript_segments=[item.model_dump() for item in payload.transcript_segments],
+                        voice_signals=[item.model_dump() for item in payload.voice_signals],
+                        elapsed_seconds=payload.elapsed_seconds,
+                        allow_ai=bool(raw_message.get("include_ai", False)),
+                    )
+                    if message_type == "finalize"
+                    else analyze_voice_session_update(
+                        session_id=payload.session_id,
+                        transcript_text=payload.transcript_text,
+                        transcript_segments=[item.model_dump() for item in payload.transcript_segments],
+                        voice_signals=[item.model_dump() for item in payload.voice_signals],
+                        elapsed_seconds=payload.elapsed_seconds,
+                        allow_ai=payload.include_ai,
+                    )
+                )
+            except ValueError as exc:
+                await websocket.send_json({"type": "error", "detail": str(exc), "request_id": request_id})
+                continue
+            except Exception as exc:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "detail": f"Voice stream analysis failed: {exc}",
+                        "request_id": request_id,
+                    }
+                )
+                continue
+
+            await websocket.send_json(
+                {
+                    "type": "analysis",
+                    "state": "final" if message_type == "finalize" else "live",
+                    "request_id": request_id,
+                    "result": result.model_dump(),
+                }
+            )
+
+            if message_type == "finalize":
+                await websocket.close()
+                return
+    except WebSocketDisconnect:
+        return

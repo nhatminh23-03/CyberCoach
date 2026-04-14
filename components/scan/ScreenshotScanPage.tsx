@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { LockIcon } from "@/components/home/icons";
 import { Header } from "@/components/home/Header";
+import { ResultDiscoveryCta, useScanResultDiscovery } from "@/components/scan/ResultDiscovery";
 import { ScanFooter } from "@/components/scan/ScanFooter";
 import { ScanSidebar } from "@/components/scan/ScanSidebar";
 import { ScreenshotScanResults } from "@/components/scan/ScreenshotScanResults";
@@ -151,6 +152,13 @@ export function ScreenshotScanPage() {
   const browseInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const {
+    resultsSectionRef,
+    showSeeResultsCta,
+    scrollToResults,
+    resultSpotlightActive,
+    traceHighlightKey
+  } = useScanResultDiscovery({ result, loading: loading || rescanBusy });
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -213,7 +221,7 @@ export function ScreenshotScanPage() {
 
       if (!cancelled) {
         setCapabilities(nextCapabilities);
-        setHistoryItems(nextHistory);
+        setHistoryItems(nextHistory.filter((item) => item.scanType === "screenshot"));
       }
     }
 
@@ -358,7 +366,7 @@ export function ScreenshotScanPage() {
       );
 
       const nextHistory = await fetchDetailedScanHistory(language);
-      setHistoryItems(nextHistory);
+      setHistoryItems(nextHistory.filter((item) => item.scanType === "screenshot"));
       setStatusMessage(
         qrPayloads.length
           ? `Screenshot analysis complete. ${qrPayloads.length} QR payload${qrPayloads.length === 1 ? "" : "s"} were decoded and inspected.`
@@ -405,7 +413,7 @@ export function ScreenshotScanPage() {
       );
 
       const nextHistory = await fetchDetailedScanHistory(language);
-      setHistoryItems(nextHistory);
+      setHistoryItems(nextHistory.filter((item) => item.scanType === "screenshot"));
       setStatusMessage("Screenshot analysis refreshed using the edited OCR text.");
     } catch (scanError) {
       setError(scanError instanceof Error ? scanError.message : "Screenshot rescan failed.");
@@ -476,24 +484,24 @@ export function ScreenshotScanPage() {
     <>
       <Header active="Scans" />
 
-      <main className="mx-auto grid max-w-[1440px] grid-cols-12 gap-8 px-4 pb-16 pt-20 sm:px-6 sm:pt-24 lg:px-8 xl:gap-12">
+      <main className="mx-auto grid max-w-[1440px] grid-cols-12 gap-6 px-4 pb-14 pt-16 sm:px-6 sm:pb-16 sm:pt-20 lg:gap-8 lg:px-8 lg:pt-24 xl:gap-12">
         <ScanSidebar activeItem="screenshot" />
 
-        <div className="col-span-12 space-y-10 xl:col-span-6 xl:space-y-12">
+        <div className="col-span-12 space-y-8 lg:space-y-10 xl:col-span-6 xl:space-y-12">
           <section className="animate-fade-up space-y-4">
             <div className="flex items-center space-x-3">
               <span className="h-px w-12 bg-secondary" />
               <span className="font-label text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
-                Vision Intercept Unit
+                Screenshot Review
               </span>
             </div>
 
             <h1 className="max-w-3xl font-headline text-4xl font-extrabold leading-none tracking-editorial text-on-surface sm:text-5xl lg:text-6xl">
-              SCREENSHOT <span className="text-secondary">INTELLIGENCE</span> SCAN.
+              SCREENSHOT <span className="text-secondary">SAFETY</span> CHECK.
             </h1>
 
             <p className="max-w-xl pt-2 text-base leading-relaxed text-on-surface-variant sm:pt-4 sm:text-lg">
-              Upload or capture a suspicious screen, extract the visible message content, and review preserved scam guidance in a private editorial workflow.
+              Upload or capture a suspicious screen so CyberCoach can read what is visible and explain what looks risky in plain language.
             </p>
           </section>
 
@@ -532,7 +540,7 @@ export function ScreenshotScanPage() {
               <div className="group flex items-center justify-between border border-outline-variant/20 bg-surface-container-low p-6 transition-all hover:border-secondary/30">
                 <div>
                   <span className="mb-1 block font-label text-[10px] uppercase tracking-widest text-on-primary-container">
-                    Vision Language
+                    Review Language
                   </span>
                   <span className="font-headline font-bold text-on-surface">Language</span>
                 </div>
@@ -593,13 +601,13 @@ export function ScreenshotScanPage() {
                 <div className="space-y-6">
                   <div>
                     <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">
-                      Suspicious screen input
+                      Screenshot input
                     </p>
                     <h2 className="mt-3 font-headline text-2xl font-bold tracking-tight text-vellum sm:text-3xl">
-                      Upload Screenshot, browse files, or take a photo.
+                      Upload a screenshot or take a photo.
                     </h2>
                     <p className="mt-4 max-w-xl text-sm leading-relaxed text-on-surface-variant">
-                      Drag an image into the workspace or use one of the capture controls below. Image analysis follows the same OCR-plus-guidance flow as the original CyberCoach screenshot scan.
+                      Drag an image here, browse for a saved screenshot, or use your camera. CyberCoach will read the visible text and review the screenshot as evidence.
                     </p>
                   </div>
 
@@ -668,7 +676,7 @@ export function ScreenshotScanPage() {
                         </div>
                         <p className="font-headline text-xl font-bold tracking-tight text-vellum">Preview panel</p>
                         <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-                          The selected screenshot or camera photo will appear here before analysis.
+                          Your screenshot or camera photo will appear here before review.
                         </p>
                       </div>
                     </div>
@@ -679,7 +687,7 @@ export function ScreenshotScanPage() {
 
             {!capabilities?.screenshotAnalysisAvailable && selectedFile ? (
               <div className="ghost-border border-[#ffb4ab]/30 bg-[#93000a]/15 p-5 text-sm leading-relaxed text-[#ffdad6]">
-                Screenshot analysis requires an Anthropic or OpenRouter API key. Add one to the project `.env` before running the vision scan.
+                Screenshot analysis needs an Anthropic or OpenRouter API key. Add one to the project `.env` before running this review.
               </div>
             ) : null}
 
@@ -692,7 +700,7 @@ export function ScreenshotScanPage() {
                   !analysisReady || loading ? "cursor-not-allowed opacity-70" : ""
                 }`}
               >
-                {loading ? "Analyzing..." : "Execute Scan"}
+                {loading ? "Checking..." : "Check Screenshot"}
               </button>
             </div>
 
@@ -700,8 +708,8 @@ export function ScreenshotScanPage() {
               <LockIcon className="h-4 w-4 shrink-0 text-secondary" />
               <span>
                 {privacyMode
-                  ? "Nothing is stored. Privacy Mode is active and visible personal details can be redacted before the final analysis."
-                  : "Nothing is stored. Your screenshot is analyzed ephemerally during this session."}
+                  ? "Nothing is stored by default. Privacy Mode can redact visible personal details before the final review."
+                  : "Nothing is stored by default. This screenshot is reviewed only for the current session."}
               </span>
             </div>
 
@@ -709,29 +717,42 @@ export function ScreenshotScanPage() {
             {statusMessage ? <div className="ghost-border border-secondary/20 bg-primary-container/30 p-5 text-sm text-primary">{statusMessage}</div> : null}
           </section>
 
+          <div
+            ref={resultsSectionRef}
+            className={`scroll-mt-28 border border-transparent transition-all duration-500 ${
+              resultSpotlightActive ? "scan-results-spotlight" : ""
+            }`}
+          >
             <ScreenshotScanResults
               result={result}
               loading={loading}
-              historyItems={historyItems}
               onCopyReport={handleCopyReport}
               onDownloadReport={handleDownloadReport}
-              onRestoreHistory={handleRestoreHistory}
               onRescanEditedText={handleRescanEditedText}
               reportBusy={reportBusy}
               rescanBusy={rescanBusy}
               rescanAvailable={Boolean(selectedFile)}
+              decisionHighlightKey={traceHighlightKey}
             />
+          </div>
         </div>
 
-        <div className="col-span-12 space-y-8 xl:col-span-4 xl:self-start">
+        <div className="col-span-12 space-y-6 lg:space-y-8 xl:col-span-4 xl:self-start">
           <ScreenshotScanRightRail
             hasPreview={Boolean(previewUrl)}
             loading={loading}
             capabilities={capabilities}
             statusMessage={statusMessage}
+            historyItems={historyItems}
+            locale={language}
+            onRestoreHistory={handleRestoreHistory}
           />
         </div>
       </main>
+
+      {showSeeResultsCta && result ? (
+        <ResultDiscoveryCta onClick={scrollToResults} />
+      ) : null}
 
       <ScanFooter />
     </>

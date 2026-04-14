@@ -36,6 +36,96 @@ OFFICIAL_ENTITIES = official_entities()
 LEGAL_THREAT_PHRASES = detection_rule_list("legal_threat_phrases")
 QR_ACCOUNT_LURE_PHRASES = detection_rule_list("qr_account_lure_phrases")
 SCREENSHOT_VISUAL_FINDING_TYPES = detection_rule_map("screenshot_visual_finding_types")
+DOCUMENT_CTA_PHRASES = detection_rule_list("document_cta_phrases") or [
+    "review document",
+    "review now",
+    "open secure file",
+    "open document",
+    "sign document",
+    "sign now",
+    "download",
+    "download invoice",
+    "view file",
+    "view document",
+]
+INVOICE_PRESSURE_PHRASES = detection_rule_list("invoice_pressure_phrases") or [
+    "invoice",
+    "payment due",
+    "past due",
+    "wire transfer",
+    "remittance",
+    "balance due",
+    "overdue payment",
+    "payment required",
+    "accounts payable",
+    "bank transfer",
+]
+VOICE_FAMILY_EMERGENCY_PHRASES = [
+    "this is your grandson",
+    "this is your granddaughter",
+    "i'm in jail",
+    "i'm at the hospital",
+    "i was in an accident",
+    "don't tell anyone",
+    "please don't call my parents",
+    "i need bail",
+]
+VOICE_BANK_IMPERSONATION_PHRASES = [
+    "fraud department",
+    "security team",
+    "bank account",
+    "bank security",
+    "card was used",
+    "credit card account",
+    "discover card",
+    "card member services",
+    "underwriting department",
+    "interest rate reduction",
+    "suspicious charge",
+    "account alert",
+]
+VOICE_GOVERNMENT_IMPERSONATION_PHRASES = [
+    "police department",
+    "detective",
+    "social security",
+    "irs",
+    "customs",
+    "court order",
+    "government agency",
+]
+VOICE_PAYMENT_REQUEST_PHRASES = [
+    "gift card",
+    "wire transfer",
+    "zelle",
+    "cash app",
+    "venmo",
+    "bitcoin",
+    "crypto",
+    "send the money",
+]
+VOICE_SECRECY_PHRASES = [
+    "keep this between us",
+    "don't tell anyone",
+    "stay on the line",
+    "do not hang up",
+    "keep this secret",
+]
+VOICE_OTP_PHRASES = [
+    "one-time code",
+    "verification code",
+    "security code",
+    "six digit code",
+    "otp",
+    "read me the code",
+]
+VOICE_CALL_CONTROL_PHRASES = [
+    "do not hang up",
+    "stay on the line",
+    "don't call the bank",
+    "don't call anyone",
+    "transfer it right now",
+    "open your banking app",
+]
 MESSAGE_SAMPLES = message_samples()
 
 
@@ -611,6 +701,12 @@ def build_evidence_buckets(findings: list[dict[str, str]], inspections: list[dic
     }
 
     buckets: list[dict[str, Any]] = []
+    successful_inspections = [item for item in inspections if item.get("inspection_succeeded")]
+    partial_inspections = [
+        item
+        for item in inspections
+        if item.get("blocked_reason") or (item.get("error") and not item.get("inspection_succeeded"))
+    ]
     for key in ("structural", "reputation", "destination"):
         bucket_findings = [
             item
@@ -623,15 +719,13 @@ def build_evidence_buckets(findings: list[dict[str, str]], inspections: list[dic
             or (key != "structural" and item["type"] in bucket_map[key])
         ]
         score = sum(3 if item["severity"] == "high" else 2 if item["severity"] == "medium" else 1 for item in bucket_findings)
-        summary = (
-            "No findings recorded."
-            if not bucket_findings
-            else bucket_findings[0]["detail"]
-        )
-        if key == "destination" and inspections and not bucket_findings:
-            summary = "Live destination inspection completed without additional page-behavior warnings."
+        summary = "No additional warning signs were recorded here." if not bucket_findings else bucket_findings[0]["detail"]
+        if key == "destination" and partial_inspections and not successful_inspections:
+            summary = "CyberCoach could not complete the destination check from this environment, so this part of the link remains only partially reviewed."
+        if key == "destination" and successful_inspections and not bucket_findings:
+            summary = "CyberCoach completed the destination check without finding additional page-behavior warnings."
         if key == "destination" and not inspections:
-            summary = "Live destination inspection was not available for this scan."
+            summary = "A destination check was not available for this scan."
 
         buckets.append(
             {
@@ -639,7 +733,7 @@ def build_evidence_buckets(findings: list[dict[str, str]], inspections: list[dic
                 "score": score,
                 "finding_count": len(bucket_findings),
                 "summary": summary,
-                "inspected": key != "destination" or bool(inspections),
+                "inspected": key != "destination" or bool(successful_inspections),
             }
         )
     return buckets
@@ -706,10 +800,283 @@ def check_qr_account_lure(text: str, screenshot_metadata: dict[str, Any] | None)
     ]
 
 
+def check_document_link_mismatch(document_metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not document_metadata:
+        return []
+
+    findings: list[dict[str, str]] = []
+    for pair in document_metadata.get("link_pairs", []):
+        if not isinstance(pair, dict) or not pair.get("display_target_mismatch"):
+            continue
+
+        display_text = str(pair.get("display_text") or "document link").strip()
+        target_domain = str(pair.get("target_domain") or pair.get("target_url") or "").strip()
+        claimed_entity = str(pair.get("claimed_entity") or "").strip()
+        severity = "high" if claimed_entity else "medium"
+        detail = (
+            f'The document presents "{display_text}" as a trusted action, but the real destination is "{target_domain}".'
+            if claimed_entity or str(pair.get("display_domain") or "").strip()
+            else f'The document link text "{display_text}" does not match its real destination "{target_domain}".'
+        )
+        findings.append(
+            {
+                "type": "document_link_mismatch",
+                "detail": detail,
+                "severity": severity,
+            }
+        )
+    return findings
+
+
+def check_document_deceptive_ctas(document_metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not document_metadata:
+        return []
+
+    findings: list[dict[str, str]] = []
+    for pair in document_metadata.get("link_pairs", []):
+        if not isinstance(pair, dict) or not pair.get("is_call_to_action"):
+            continue
+
+        target_domain = str(pair.get("target_domain") or "").strip()
+        if not target_domain:
+            continue
+
+        if not (
+            pair.get("display_target_mismatch")
+            or pair.get("is_shortened")
+            or pair.get("is_raw_ip")
+            or pair.get("suspicious_tld")
+            or int(pair.get("subdomain_count") or 0) >= 2
+        ):
+            continue
+
+        findings.append(
+            {
+                "type": "document_deceptive_cta",
+                "detail": (
+                    f'The document includes a clickable prompt like "{pair.get("display_text", "Open")}" '
+                    f'that leads to the risky destination "{target_domain}".'
+                ),
+                "severity": "high",
+            }
+        )
+    return findings
+
+
+def check_invoice_payment_pressure(text: str, document_metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not document_metadata:
+        return []
+
+    lower = text.lower()
+    matched = [phrase for phrase in INVOICE_PRESSURE_PHRASES if phrase in lower]
+    if len(matched) < 2:
+        return []
+
+    linked_destinations = document_metadata.get("extracted_urls") or []
+    return [
+        {
+            "type": "invoice_payment_pressure",
+            "detail": (
+                f'The document uses invoice or payment-pressure language such as "{matched[0]}" and "{matched[1]}".'
+                + (" It also includes outbound links or destinations for action." if linked_destinations else "")
+            ),
+            "severity": "high" if linked_destinations else "medium",
+        }
+    ]
+
+
+def check_document_qr_payloads(document_metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not document_metadata:
+        return []
+
+    payloads = [str(item).strip() for item in document_metadata.get("qr_payloads", []) if str(item).strip()]
+    if not payloads:
+        return []
+
+    findings: list[dict[str, str]] = []
+    for payload in payloads[:2]:
+        findings.append(
+            {
+                "type": "document_qr_payload",
+                "detail": f'The document contains a QR code that resolves to "{payload}".',
+                "severity": "low",
+            }
+        )
+    return findings
+
+
+def check_document_limitations(document_metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not document_metadata:
+        return []
+
+    findings: list[dict[str, str]] = []
+    if document_metadata.get("protected"):
+        findings.append(
+            {
+                "type": "document_protected",
+                "detail": "The document appears to be encrypted or password-protected, so CyberCoach could not fully inspect it.",
+                "severity": "high",
+            }
+        )
+    if document_metadata.get("macro_enabled"):
+        findings.append(
+            {
+                "type": "document_macro_enabled",
+                "detail": "This document is macro-enabled. Unexpected macro-enabled Office files are commonly used to deliver malware or steal credentials.",
+                "severity": "high",
+            }
+        )
+    if document_metadata.get("image_based"):
+        findings.append(
+            {
+                "type": "document_partial_analysis" if document_metadata.get("ocr_fallback_used") else "document_image_only",
+                "detail": (
+                    "This document appears to be image-based or scanned. CyberCoach used OCR fallback, but the result should still be treated as a partial review."
+                    if document_metadata.get("ocr_fallback_used")
+                    else "This document appears to be image-based or scanned, which limits deeper text and link review."
+                ),
+                "severity": "medium" if document_metadata.get("ocr_fallback_used") else "high",
+            }
+        )
+    if document_metadata.get("partial_analysis") and not findings:
+        findings.append(
+            {
+                "type": "document_partial_analysis",
+                "detail": "CyberCoach could only partially inspect this document, so the result should be verified cautiously.",
+                "severity": "medium",
+            }
+        )
+    return findings
+
+
+def check_voice_family_emergency(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_FAMILY_EMERGENCY_PHRASES if phrase in lower]
+    if len(matched) < 1:
+        return []
+    detail = (
+        f'The call transcript uses family-emergency pressure such as "{matched[0]}".'
+        if len(matched) == 1
+        else f'The call transcript uses family-emergency pressure such as "{matched[0]}" and "{matched[1]}".'
+    )
+    return [{"type": "voice_family_emergency", "detail": detail, "severity": "high"}]
+
+
+def check_voice_bank_impersonation(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_BANK_IMPERSONATION_PHRASES if phrase in lower]
+    if len(matched) < 2:
+        return []
+    return [
+        {
+            "type": "voice_bank_impersonation",
+            "detail": f'The caller claims financial-account authority using phrases like "{matched[0]}" and "{matched[1]}".',
+            "severity": "high",
+        }
+    ]
+
+
+def check_voice_government_impersonation(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_GOVERNMENT_IMPERSONATION_PHRASES if phrase in lower]
+    if len(matched) < 2:
+        return []
+    return [
+        {
+            "type": "voice_government_impersonation",
+            "detail": f'The caller uses official-pressure language such as "{matched[0]}" and "{matched[1]}".',
+            "severity": "high",
+        }
+    ]
+
+
+def check_voice_payment_request(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_PAYMENT_REQUEST_PHRASES if phrase in lower]
+    if len(matched) < 1:
+        return []
+    severity = "high" if len(matched) >= 2 else "medium"
+    detail = (
+        f'The caller is pushing an immediate payment method such as "{matched[0]}".'
+        if len(matched) == 1
+        else f'The caller is pushing immediate payment methods like "{matched[0]}" and "{matched[1]}".'
+    )
+    return [{"type": "voice_payment_request", "detail": detail, "severity": severity}]
+
+
+def check_voice_secrecy_pressure(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_SECRECY_PHRASES if phrase in lower]
+    if len(matched) < 1:
+        return []
+    return [
+        {
+            "type": "voice_secrecy_pressure",
+            "detail": f'The caller tries to isolate the listener with pressure such as "{matched[0]}".',
+            "severity": "high" if len(matched) >= 2 else "medium",
+        }
+    ]
+
+
+def check_voice_otp_request(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_OTP_PHRASES if phrase in lower]
+    if len(matched) < 1:
+        return []
+    return [
+        {
+            "type": "voice_otp_request",
+            "detail": f'The caller appears to be requesting a verification code or login token: "{matched[0]}".',
+            "severity": "high",
+        }
+    ]
+
+
+def check_voice_call_control(text: str) -> list[dict[str, str]]:
+    lower = text.lower()
+    matched = [phrase for phrase in VOICE_CALL_CONTROL_PHRASES if phrase in lower]
+    if len(matched) < 1:
+        return []
+    return [
+        {
+            "type": "voice_call_control",
+            "detail": f'The caller is trying to control the call flow with language like "{matched[0]}".',
+            "severity": "medium",
+        }
+    ]
+
+
+def check_voice_signal_findings(voice_metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not voice_metadata:
+        return []
+
+    findings: list[dict[str, str]] = []
+    for item in voice_metadata.get("voice_signals", []):
+        if not isinstance(item, dict):
+            continue
+        signal_type = str(item.get("type") or "").strip()
+        detail = str(item.get("detail") or "").strip()
+        severity = str(item.get("severity") or "low").strip().lower()
+        if not signal_type or not detail:
+            continue
+        if severity not in {"low", "medium", "high"}:
+            severity = "low"
+        findings.append(
+            {
+                "type": signal_type,
+                "detail": detail,
+                "severity": severity,
+            }
+        )
+    return findings
+
+
 def run_heuristics(
     text: str,
     enable_live_url_checks: bool = False,
     screenshot_metadata: dict[str, Any] | None = None,
+    document_metadata: dict[str, Any] | None = None,
+    voice_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the existing local phishing heuristics with the original scoring model."""
     urls = extract_urls(text)
@@ -731,6 +1098,19 @@ def run_heuristics(
         + check_live_destination_signals(live_url_inspection)
         + check_screenshot_visual_signals(screenshot_metadata)
         + check_qr_account_lure(text, screenshot_metadata)
+        + check_document_link_mismatch(document_metadata)
+        + check_document_deceptive_ctas(document_metadata)
+        + check_invoice_payment_pressure(text, document_metadata)
+        + check_document_qr_payloads(document_metadata)
+        + check_document_limitations(document_metadata)
+        + check_voice_family_emergency(text)
+        + check_voice_bank_impersonation(text)
+        + check_voice_government_impersonation(text)
+        + check_voice_payment_request(text)
+        + check_voice_secrecy_pressure(text)
+        + check_voice_otp_request(text)
+        + check_voice_call_control(text)
+        + check_voice_signal_findings(voice_metadata)
     )
 
     seen: set[str] = set()

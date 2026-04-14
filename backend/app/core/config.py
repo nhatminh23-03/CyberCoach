@@ -23,6 +23,8 @@ class Settings:
     default_anthropic_model: str
     default_openrouter_model: str
     default_second_model: str
+    default_live_voice_model: str
+    default_voice_media_model: str
     openrouter_messages_url: str
     openrouter_chat_url: str
     history_limit: int
@@ -40,6 +42,8 @@ def get_settings() -> Settings:
         default_anthropic_model=get_secret("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
         default_openrouter_model=get_secret("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.6"),
         default_second_model=get_secret("SECOND_MODEL", "openai/gpt-5.3-chat"),
+        default_live_voice_model=get_secret("LIVE_VOICE_MODEL", "google/gemini-2.5-flash"),
+        default_voice_media_model=get_secret("VOICE_MEDIA_MODEL", "google/gemini-2.5-flash"),
         openrouter_messages_url=get_secret("OPENROUTER_MESSAGES_URL", "https://openrouter.ai/api/v1/messages"),
         openrouter_chat_url=get_secret("OPENROUTER_CHAT_URL", "https://openrouter.ai/api/v1/chat/completions"),
         history_limit=int(get_secret("HISTORY_LIMIT", "200")),

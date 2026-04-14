@@ -1,0 +1,30 @@
+{
+  "message_bank_fraud_alert": {
+    "scan_type": "message",
+    "risk_label": "High Risk",
+    "expectedFindingTypes": ["credential_ask", "urgency", "official_entity_impersonation"],
+    "summaryContains": ["warning signs", "verify"],
+    "actionsContain": ["Do not click", "official website"]
+  },
+  "url_obvious_phish": {
+    "scan_type": "url",
+    "risk_label": "High Risk",
+    "expectedFindingTypes": ["credential_ask", "official_entity_impersonation", "subdomain_impersonation"],
+    "summaryContains": ["warning signs", "verify"],
+    "actionsContain": ["Do not open", "official site"]
+  },
+  "document_fake_sharepoint": {
+    "scan_type": "document",
+    "risk_label": "High Risk",
+    "expectedFindingTypes": ["document_link_mismatch", "document_deceptive_cta", "official_entity_impersonation"],
+    "summaryContains": ["document", "warning"],
+    "actionsContain": ["Do not", "verify"]
+  },
+  "voice_bank_impersonation": {
+    "scan_type": "voice",
+    "risk_label": "High Risk",
+    "expectedFindingTypes": ["voice_bank_impersonation", "voice_call_control", "voice_otp_request"],
+    "summaryContains": ["call review", "trusted channel"],
+    "actionsContain": ["Do not send money", "phone number you already trust"]
+  }
+}

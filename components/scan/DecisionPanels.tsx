@@ -50,105 +50,340 @@ type DecisionPanelCopy = {
   };
 };
 
-const DECISION_PANEL_COPY: Record<"en" | "vi", DecisionPanelCopy> = {
+const DECISION_PANEL_COPY: Record<SupportedLocale, DecisionPanelCopy> = {
   en: {
     titles: {
-      decisionTrace: "Decision Trace",
-      consensusEngine: "Consensus Engine",
-      modelAssessments: "Model Assessments",
-      crossModelReview: "Cross-Model Review",
-      urlEvidence: "URL Evidence",
-      domainIntelligence: "Domain Intelligence"
+      decisionTrace: "AI Review Summary",
+      consensusEngine: "How CyberCoach Decided",
+      modelAssessments: "Model Comparison",
+      crossModelReview: "AI Review",
+      urlEvidence: "Link Evidence",
+      domainIntelligence: "Domain Details"
     },
     labels: {
-      decisionSource: "Decision Source",
-      comparison: "Comparison",
+      decisionSource: "Decision source",
+      comparison: "Model status",
       responsesReturned: "Responses Returned",
-      decisionSummary: "Decision Summary",
+      decisionSummary: "What this means",
       confidenceSuffix: "confidence",
       modelsAgree: "Models agree",
       modelsDisagree: "Models disagree",
       oneModelResponded: "Only one model responded",
-      heuristicsOnly: "Heuristics only",
-      primaryUnavailable: "Primary model unavailable",
-      secondUnavailable: "Second model unavailable",
-      aiUnavailable: "AI model assessments were unavailable for this scan. The current verdict was produced from local heuristics only.",
-      primaryModel: "Primary Model",
-      secondModel: "Second Model",
-      noConfidence: "No confidence score",
+      heuristicsOnly: "Local review only",
+      primaryUnavailable: "Primary AI review unavailable",
+      secondUnavailable: "Second AI review unavailable",
+      aiUnavailable: "AI review was unavailable for this scan, so CyberCoach relied on local checks.",
+      primaryModel: "Primary review",
+      secondModel: "Second review",
+      noConfidence: "No confidence shown",
       registered: "Registered",
       tld: "TLD",
       subdomain: "Subdomain",
       subdomainCount: "Subdomain count",
-      noUrls: "No URLs were extracted from this scan, so there is no domain evidence to display.",
-      noConsensusMetadata: "No consensus metadata was returned for this scan.",
+      noUrls: "No links were extracted from this scan, so there are no domain details to show.",
+      noConsensusMetadata: "No AI review summary was returned for this scan.",
       noSubdomain: "None",
-      modelBackedDecision: "Model-backed decision",
-      heuristicFallback: "Heuristic fallback",
+      modelBackedDecision: "AI-informed result",
+      heuristicFallback: "Local fallback",
       consensus: "Consensus",
       disagreement: "Disagreement",
       singleModel: "Single model",
-      noModels: "No models"
+      noModels: "No AI review"
     },
     sourceLabels: {
-      consensus: "Dual-model consensus",
-      consensusOverride: "Consensus + heuristic override",
-      consensusDisagreement: "Dual-model disagreement",
-      singleModel: "Single model",
-      heuristicFallback: "Heuristic fallback"
+      consensus: "Two-model agreement",
+      consensusOverride: "Model agreement + local caution",
+      consensusDisagreement: "Two-model disagreement",
+      singleModel: "Single model result",
+      heuristicFallback: "Local fallback"
+    }
+  },
+  es: {
+    titles: {
+      decisionTrace: "Resumen de Revision con IA",
+      consensusEngine: "Como decidio CyberCoach",
+      modelAssessments: "Comparacion de Modelos",
+      crossModelReview: "Revision con IA",
+      urlEvidence: "Evidencia del Enlace",
+      domainIntelligence: "Detalles del Dominio"
+    },
+    labels: {
+      decisionSource: "Fuente de la decision",
+      comparison: "Estado del modelo",
+      responsesReturned: "Respuestas recibidas",
+      decisionSummary: "Lo que esto significa",
+      confidenceSuffix: "de confianza",
+      modelsAgree: "Los modelos coinciden",
+      modelsDisagree: "Los modelos no coinciden",
+      oneModelResponded: "Solo respondio un modelo",
+      heuristicsOnly: "Solo revision local",
+      primaryUnavailable: "Revision principal no disponible",
+      secondUnavailable: "Revision secundaria no disponible",
+      aiUnavailable: "La revision con IA no estuvo disponible, asi que CyberCoach uso verificaciones locales.",
+      primaryModel: "Revision principal",
+      secondModel: "Segunda revision",
+      noConfidence: "Sin nivel de confianza",
+      registered: "Registrado",
+      tld: "TLD",
+      subdomain: "Subdominio",
+      subdomainCount: "Cantidad de subdominios",
+      noUrls: "No se extrajeron enlaces, asi que no hay detalles de dominio para mostrar.",
+      noConsensusMetadata: "No se devolvio un resumen de revision con IA.",
+      noSubdomain: "Ninguno",
+      modelBackedDecision: "Resultado con apoyo de IA",
+      heuristicFallback: "Respaldo local",
+      consensus: "Acuerdo",
+      disagreement: "Desacuerdo",
+      singleModel: "Un solo modelo",
+      noModels: "Sin revision de IA"
+    },
+    sourceLabels: {
+      consensus: "Acuerdo de dos modelos",
+      consensusOverride: "Acuerdo del modelo + cautela local",
+      consensusDisagreement: "Desacuerdo de dos modelos",
+      singleModel: "Resultado de un modelo",
+      heuristicFallback: "Respaldo local"
+    }
+  },
+  zh: {
+    titles: {
+      decisionTrace: "AI 审查摘要",
+      consensusEngine: "CyberCoach 如何判断",
+      modelAssessments: "模型对比",
+      crossModelReview: "AI 审查",
+      urlEvidence: "链接证据",
+      domainIntelligence: "域名详情"
+    },
+    labels: {
+      decisionSource: "判断来源",
+      comparison: "模型状态",
+      responsesReturned: "返回结果数",
+      decisionSummary: "这意味着什么",
+      confidenceSuffix: "置信度",
+      modelsAgree: "模型意见一致",
+      modelsDisagree: "模型意见不一致",
+      oneModelResponded: "只有一个模型返回结果",
+      heuristicsOnly: "仅本地检查",
+      primaryUnavailable: "主 AI 审查不可用",
+      secondUnavailable: "第二个 AI 审查不可用",
+      aiUnavailable: "这次扫描无法完成 AI 审查，所以 CyberCoach 使用了本地检查。",
+      primaryModel: "主审查",
+      secondModel: "第二审查",
+      noConfidence: "没有置信度",
+      registered: "注册域名",
+      tld: "TLD",
+      subdomain: "子域名",
+      subdomainCount: "子域名数量",
+      noUrls: "这次扫描没有提取到链接，因此没有域名详情可显示。",
+      noConsensusMetadata: "这次扫描没有返回 AI 审查摘要。",
+      noSubdomain: "无",
+      modelBackedDecision: "AI 参与的结果",
+      heuristicFallback: "本地回退",
+      consensus: "一致",
+      disagreement: "分歧",
+      singleModel: "单模型",
+      noModels: "没有 AI 审查"
+    },
+    sourceLabels: {
+      consensus: "双模型一致",
+      consensusOverride: "模型一致 + 本地谨慎升级",
+      consensusDisagreement: "双模型分歧",
+      singleModel: "单模型结果",
+      heuristicFallback: "本地回退"
     }
   },
   vi: {
     titles: {
-      decisionTrace: "Dau Vet Quyet Dinh",
-      consensusEngine: "Bo May Dong Thuan",
-      modelAssessments: "Danh Gia Mo Hinh",
-      crossModelReview: "Doi Chieu Mo Hinh",
-      urlEvidence: "Bang Chung URL",
-      domainIntelligence: "Tinh Bao Ten Mien"
+      decisionTrace: "Tom Tat Danh Gia AI",
+      consensusEngine: "CyberCoach Da Quyết Dinh The Nao",
+      modelAssessments: "So Sanh Mo Hinh",
+      crossModelReview: "Danh Gia AI",
+      urlEvidence: "Bang Chung Lien Ket",
+      domainIntelligence: "Chi Tiet Ten Mien"
     },
     labels: {
-      decisionSource: "Nguon Quyet Dinh",
-      comparison: "So Sanh",
+      decisionSource: "Nguon quyet dinh",
+      comparison: "Trang thai mo hinh",
       responsesReturned: "So Phan Hoi",
-      decisionSummary: "Tom Tat Quyet Dinh",
+      decisionSummary: "Dieu nay co nghia gi",
       confidenceSuffix: "do tin cay",
       modelsAgree: "Hai mo hinh dong y",
       modelsDisagree: "Hai mo hinh bat dong",
       oneModelResponded: "Chi co mot mo hinh phan hoi",
-      heuristicsOnly: "Chi dung heuristic",
-      primaryUnavailable: "Mo hinh chinh khong kha dung",
-      secondUnavailable: "Mo hinh thu hai khong kha dung",
-      aiUnavailable: "Khong co danh gia AI cho lan quet nay. Ket qua hien tai duoc tao tu heuristic cuc bo.",
-      primaryModel: "Mo Hinh Chinh",
-      secondModel: "Mo Hinh Thu Hai",
-      noConfidence: "Khong co diem tin cay",
+      heuristicsOnly: "Chi kiem tra cuc bo",
+      primaryUnavailable: "Danh gia AI chinh khong kha dung",
+      secondUnavailable: "Danh gia AI thu hai khong kha dung",
+      aiUnavailable: "Khong co danh gia AI cho lan quet nay, nen CyberCoach da dung kiem tra cuc bo.",
+      primaryModel: "Danh gia chinh",
+      secondModel: "Danh gia thu hai",
+      noConfidence: "Khong co muc tin cay",
       registered: "Ten mien goc",
       tld: "TLD",
       subdomain: "Tien to mien",
       subdomainCount: "So luong subdomain",
-      noUrls: "Khong trich xuat duoc URL nao tu lan quet nay, nen khong co bang chung ten mien de hien thi.",
-      noConsensusMetadata: "Lan quet nay khong tra ve du lieu dong thuan.",
+      noUrls: "Khong trich xuat duoc lien ket nao, nen khong co chi tiet ten mien de hien thi.",
+      noConsensusMetadata: "Lan quet nay khong tra ve tom tat danh gia AI.",
       noSubdomain: "Khong co",
-      modelBackedDecision: "Quyet dinh co AI",
-      heuristicFallback: "Du phong heuristic",
+      modelBackedDecision: "Ket qua co AI ho tro",
+      heuristicFallback: "Du phong cuc bo",
       consensus: "Dong thuan",
       disagreement: "Bat dong",
       singleModel: "Mot mo hinh",
-      noModels: "Khong co AI"
+      noModels: "Khong co danh gia AI"
     },
     sourceLabels: {
       consensus: "Dong thuan hai mo hinh",
-      consensusOverride: "Dong thuan + heuristic ghi de",
+      consensusOverride: "Dong thuan + canh bao cuc bo",
       consensusDisagreement: "Bat dong giua hai mo hinh",
-      singleModel: "Mot mo hinh",
-      heuristicFallback: "Du phong heuristic"
+      singleModel: "Ket qua tu mot mo hinh",
+      heuristicFallback: "Du phong cuc bo"
+    }
+  },
+  ko: {
+    titles: {
+      decisionTrace: "AI 검토 요약",
+      consensusEngine: "CyberCoach가 판단한 방식",
+      modelAssessments: "모델 비교",
+      crossModelReview: "AI 검토",
+      urlEvidence: "링크 근거",
+      domainIntelligence: "도메인 세부정보"
+    },
+    labels: {
+      decisionSource: "판단 출처",
+      comparison: "모델 상태",
+      responsesReturned: "응답 수",
+      decisionSummary: "이 결과의 의미",
+      confidenceSuffix: "신뢰도",
+      modelsAgree: "모델 의견 일치",
+      modelsDisagree: "모델 의견 불일치",
+      oneModelResponded: "한 모델만 응답",
+      heuristicsOnly: "로컬 검토만",
+      primaryUnavailable: "주 AI 검토 불가",
+      secondUnavailable: "두 번째 AI 검토 불가",
+      aiUnavailable: "이번 스캔에서는 AI 검토를 사용할 수 없어 CyberCoach가 로컬 확인을 사용했습니다.",
+      primaryModel: "주 검토",
+      secondModel: "보조 검토",
+      noConfidence: "신뢰도 없음",
+      registered: "등록 도메인",
+      tld: "TLD",
+      subdomain: "서브도메인",
+      subdomainCount: "서브도메인 수",
+      noUrls: "이 스캔에서 링크를 찾지 못해 도메인 세부정보를 표시할 수 없습니다.",
+      noConsensusMetadata: "AI 검토 요약이 반환되지 않았습니다.",
+      noSubdomain: "없음",
+      modelBackedDecision: "AI 참고 결과",
+      heuristicFallback: "로컬 대체 결과",
+      consensus: "합의",
+      disagreement: "불일치",
+      singleModel: "단일 모델",
+      noModels: "AI 검토 없음"
+    },
+    sourceLabels: {
+      consensus: "두 모델 합의",
+      consensusOverride: "모델 합의 + 로컬 주의",
+      consensusDisagreement: "두 모델 불일치",
+      singleModel: "단일 모델 결과",
+      heuristicFallback: "로컬 대체 결과"
+    }
+  },
+  tl: {
+    titles: {
+      decisionTrace: "Buod ng Review ng AI",
+      consensusEngine: "Paano Nagpasya ang CyberCoach",
+      modelAssessments: "Paghahambing ng Modelo",
+      crossModelReview: "Review ng AI",
+      urlEvidence: "Ebidensya ng Link",
+      domainIntelligence: "Detalye ng Domain"
+    },
+    labels: {
+      decisionSource: "Pinagmulan ng pasya",
+      comparison: "Kalagayan ng modelo",
+      responsesReturned: "Bilang ng tugon",
+      decisionSummary: "Ano ang ibig sabihin nito",
+      confidenceSuffix: "na kumpiyansa",
+      modelsAgree: "Magkapareho ang modelo",
+      modelsDisagree: "Hindi magkapareho ang modelo",
+      oneModelResponded: "Isang modelo lang ang tumugon",
+      heuristicsOnly: "Lokal na review lang",
+      primaryUnavailable: "Hindi available ang pangunahing AI review",
+      secondUnavailable: "Hindi available ang ikalawang AI review",
+      aiUnavailable: "Hindi available ang AI review para sa scan na ito kaya lokal na pagsusuri ang ginamit ng CyberCoach.",
+      primaryModel: "Pangunahing review",
+      secondModel: "Ikalawang review",
+      noConfidence: "Walang score ng kumpiyansa",
+      registered: "Rehistradong domain",
+      tld: "TLD",
+      subdomain: "Subdomain",
+      subdomainCount: "Bilang ng subdomain",
+      noUrls: "Walang nakuha na link sa scan na ito kaya walang domain details na maipapakita.",
+      noConsensusMetadata: "Walang naibalik na buod ng AI review.",
+      noSubdomain: "Wala",
+      modelBackedDecision: "Resultang may AI",
+      heuristicFallback: "Lokal na fallback",
+      consensus: "Pagkakasundo",
+      disagreement: "Hindi pagkakasundo",
+      singleModel: "Isang modelo",
+      noModels: "Walang AI review"
+    },
+    sourceLabels: {
+      consensus: "Pagkakasundo ng dalawang modelo",
+      consensusOverride: "Pagkakasundo ng modelo + lokal na pag-iingat",
+      consensusDisagreement: "Hindi pagkakasundo ng dalawang modelo",
+      singleModel: "Resulta ng isang modelo",
+      heuristicFallback: "Lokal na fallback"
+    }
+  },
+  fr: {
+    titles: {
+      decisionTrace: "Resume de la Revue IA",
+      consensusEngine: "Comment CyberCoach a Decide",
+      modelAssessments: "Comparaison des Modeles",
+      crossModelReview: "Revue IA",
+      urlEvidence: "Preuves du Lien",
+      domainIntelligence: "Details du Domaine"
+    },
+    labels: {
+      decisionSource: "Source de la decision",
+      comparison: "Etat des modeles",
+      responsesReturned: "Reponses recues",
+      decisionSummary: "Ce que cela signifie",
+      confidenceSuffix: "de confiance",
+      modelsAgree: "Les modeles sont d'accord",
+      modelsDisagree: "Les modeles ne sont pas d'accord",
+      oneModelResponded: "Un seul modele a repondu",
+      heuristicsOnly: "Analyse locale seulement",
+      primaryUnavailable: "Revue IA principale indisponible",
+      secondUnavailable: "Deuxieme revue IA indisponible",
+      aiUnavailable: "La revue IA n'etait pas disponible pour cette analyse, donc CyberCoach a utilise des verifications locales.",
+      primaryModel: "Revue principale",
+      secondModel: "Deuxieme revue",
+      noConfidence: "Pas de score de confiance",
+      registered: "Domaine enregistre",
+      tld: "TLD",
+      subdomain: "Sous-domaine",
+      subdomainCount: "Nombre de sous-domaines",
+      noUrls: "Aucun lien n'a ete extrait de cette analyse, donc aucun detail de domaine n'est disponible.",
+      noConsensusMetadata: "Aucun resume de revue IA n'a ete retourne.",
+      noSubdomain: "Aucun",
+      modelBackedDecision: "Resultat aide par l'IA",
+      heuristicFallback: "Secours local",
+      consensus: "Consensus",
+      disagreement: "Desaccord",
+      singleModel: "Modele unique",
+      noModels: "Aucune revue IA"
+    },
+    sourceLabels: {
+      consensus: "Accord de deux modeles",
+      consensusOverride: "Accord des modeles + prudence locale",
+      consensusDisagreement: "Desaccord de deux modeles",
+      singleModel: "Resultat d'un seul modele",
+      heuristicFallback: "Secours local"
     }
   }
 };
 
 export function getDecisionPanelCopy(locale: SupportedLocale): DecisionPanelCopy {
-  return DECISION_PANEL_COPY[locale === "vi" ? "vi" : "en"];
+  return DECISION_PANEL_COPY[locale] ?? DECISION_PANEL_COPY.en;
 }
 
 function riskClass(riskLevel: "safe" | "suspicious" | "high_risk") {
@@ -226,41 +461,23 @@ function localizedConsensusSummary(result: MessageScanResult) {
     return copy.labels.noConsensusMetadata;
   }
 
-  const firstModel = result.modelRuns[0]?.model;
-
-  if (result.locale === "vi") {
-    if (result.decisionSource === "consensus_heuristic_override") {
-      return "Hai mo hinh dong thuan, nhung heuristic tim thay dau hieu manh hon nen ket qua cuoi cung duoc nang muc de phong.";
-    }
-    if (consensus.status === "disagree" || result.decisionSource === "consensus_disagreement") {
-      return "Hai mo hinh dua ra danh gia khac nhau, nen CyberCoach giu muc canh bao than trong hon cho ket qua cuoi cung.";
-    }
-    if (consensus.status === "single_model") {
-      return firstModel
-        ? `Chi co ${firstModel} tra ve ket qua, nen CyberCoach su dung danh gia do cho ket luan cuoi cung.`
-        : "Chi co mot mo hinh tra ve ket qua, nen CyberCoach su dung danh gia do cho ket luan cuoi cung.";
-    }
-    if (consensus.status === "heuristic_fallback" || result.decisionSource === "heuristic_fallback") {
-      return "Khong co danh gia AI kha dung, nen ket qua hien tai duoc tao tu heuristic cuc bo.";
-    }
-    return "Hai mo hinh deu dong y ve muc rui ro cuoi cung.";
+  if (typeof consensus.summary === "string" && consensus.summary.trim()) {
+    return consensus.summary.trim();
   }
 
   if (result.decisionSource === "consensus_heuristic_override") {
-    return "Both models agreed, but stronger heuristic evidence elevated the final verdict as a precaution.";
+    return "The AI reviews leaned the same way, but stronger local warning signs pushed the final result higher as a precaution.";
   }
   if (consensus.status === "disagree" || result.decisionSource === "consensus_disagreement") {
-    return "The two models disagreed, so CyberCoach kept the more cautious risk assessment.";
+    return "The AI reviews disagreed, so CyberCoach kept the more cautious result.";
   }
   if (consensus.status === "single_model") {
-    return firstModel
-      ? `Only ${firstModel} returned a usable assessment, so CyberCoach used that result for the final verdict.`
-      : "Only one model returned a usable assessment, so CyberCoach used that result for the final verdict.";
+    return "Only one AI review returned a usable result, so CyberCoach used that result for the final verdict.";
   }
   if (consensus.status === "heuristic_fallback" || result.decisionSource === "heuristic_fallback") {
-    return "No usable AI assessment was available, so the current verdict was produced from local heuristics only.";
+    return copy.labels.aiUnavailable;
   }
-  return "Both models agreed on the final risk level.";
+  return "The AI reviews agreed on the final risk level.";
 }
 
 export function DecisionSummaryPanel({ result }: { result: MessageScanResult }) {

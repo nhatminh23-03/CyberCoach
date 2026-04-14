@@ -94,6 +94,13 @@
     "ups.com",
     "fedex.com",
     "dhl.com",
+    "sharepoint.com",
+    "onedrive.com",
+    "docusign.com",
+    "docusign.net",
+    "adp.com",
+    "workday.com",
+    "paychex.com",
     "irs.gov",
     "ca.gov",
     "california.gov",
@@ -128,6 +135,10 @@
         "office 365",
         "outlook",
         "teams",
+        "sharepoint",
+        "share point",
+        "onedrive",
+        "one drive",
         "multi-factor authentication",
         "mfa",
         "2fa",
@@ -142,6 +153,97 @@
         "live.com",
         "sharepoint.com",
         "onedrive.com"
+      ]
+    },
+    {
+      "name": "DocuSign",
+      "keywords": [
+        "docusign",
+        "secure document",
+        "signature request",
+        "review document",
+        "sign document"
+      ],
+      "official_domains": [
+        "docusign.com",
+        "docusign.net"
+      ]
+    },
+    {
+      "name": "Google Drive",
+      "keywords": [
+        "google drive",
+        "google docs",
+        "google document",
+        "shared document",
+        "shared file"
+      ],
+      "official_domains": [
+        "google.com",
+        "googleusercontent.com",
+        "googleapis.com"
+      ]
+    },
+    {
+      "name": "Adobe",
+      "keywords": [
+        "adobe",
+        "acrobat sign",
+        "adobe sign",
+        "secure pdf"
+      ],
+      "official_domains": [
+        "adobe.com",
+        "acrobat.com",
+        "documentcloud.adobe.com"
+      ]
+    },
+    {
+      "name": "Dropbox",
+      "keywords": [
+        "dropbox",
+        "shared dropbox file",
+        "view file"
+      ],
+      "official_domains": [
+        "dropbox.com"
+      ]
+    },
+    {
+      "name": "ADP",
+      "keywords": [
+        "adp",
+        "payroll",
+        "direct deposit",
+        "employee portal"
+      ],
+      "official_domains": [
+        "adp.com"
+      ]
+    },
+    {
+      "name": "Workday",
+      "keywords": [
+        "workday",
+        "human resources",
+        "hr form",
+        "employee form"
+      ],
+      "official_domains": [
+        "workday.com",
+        "myworkday.com"
+      ]
+    },
+    {
+      "name": "Chase",
+      "keywords": [
+        "chase",
+        "bank statement",
+        "fraud notice",
+        "account alert"
+      ],
+      "official_domains": [
+        "chase.com"
       ]
     },
     {
@@ -216,6 +318,31 @@
     "verify and review",
     "password security"
   ],
+  "document_cta_phrases": [
+    "review document",
+    "review now",
+    "open secure file",
+    "open document",
+    "view document",
+    "view file",
+    "download file",
+    "download attachment",
+    "sign document",
+    "sign now",
+    "review invoice"
+  ],
+  "invoice_pressure_phrases": [
+    "invoice",
+    "payment due",
+    "past due",
+    "overdue payment",
+    "wire transfer",
+    "bank transfer",
+    "payment required",
+    "balance due",
+    "accounts payable",
+    "remittance"
+  ],
   "common_multi_part_suffixes": [
     "co.uk",
     "gov.uk",
@@ -227,8 +354,13 @@
     "delivery_notice_ui",
     "payment_request_ui",
     "credential_prompt_ui",
+    "partial_login_ui",
     "system_alert_ui",
     "account_security_ui",
+    "browser_chrome_ui",
+    "banking_app_ui",
+    "notification_banner_ui",
+    "cropped_context_ui",
     "urgent_cta_ui",
     "brand_impersonation_ui",
     "qr_code_visible"
@@ -238,8 +370,13 @@
     "delivery_notice_ui": "visual_delivery_notice_ui",
     "payment_request_ui": "visual_payment_request_ui",
     "credential_prompt_ui": "visual_credential_prompt",
+    "partial_login_ui": "visual_partial_login_ui",
     "system_alert_ui": "visual_system_alert_ui",
     "account_security_ui": "visual_account_security_ui",
+    "browser_chrome_ui": "visual_browser_chrome_ui",
+    "banking_app_ui": "visual_banking_app_ui",
+    "notification_banner_ui": "visual_notification_banner_ui",
+    "cropped_context_ui": "visual_cropped_context_ui",
     "urgent_cta_ui": "visual_urgent_cta",
     "brand_impersonation_ui": "visual_brand_impersonation"
   },

@@ -75,3 +75,13 @@ export function CheckCircleIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function PhoneCallIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className}>
+      <path d="M5.2 4.7c.5-.5 1.3-.6 1.9-.2l2.2 1.4c.6.4.9 1.2.6 1.9l-.8 2.2a1 1 0 0 0 .2 1l3.2 3.2a1 1 0 0 0 1 .2l2.2-.8c.7-.3 1.5 0 1.9.6l1.4 2.2c.4.6.3 1.4-.2 1.9l-1 1c-.9.9-2.3 1.3-3.6.9-2.9-.8-5.6-2.4-7.9-4.7s-3.9-5-4.7-7.9c-.4-1.3 0-2.7.9-3.6l1-1Z" />
+      <path d="M15.5 4.5a5 5 0 0 1 4 4" />
+      <path d="M15.5 1.5a8 8 0 0 1 7 7" />
+    </svg>
+  );
+}

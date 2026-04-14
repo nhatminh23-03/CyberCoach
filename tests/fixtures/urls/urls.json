@@ -1,0 +1,44 @@
+{
+  "obvious_phish": {
+    "label": "Obvious phishing URL",
+    "url": "https://paypal-security-check-login.com/review",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["official_entity_impersonation", "domain_mismatch"]
+  },
+  "lookalike_domain": {
+    "label": "Lookalike domain",
+    "url": "https://paypa1.com-security-alert.co/login",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["homoglyph", "official_entity_impersonation"]
+  },
+  "suspicious_tld": {
+    "label": "Suspicious TLD",
+    "url": "https://secure-billing-support.top/invoice/88421",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["suspicious_tld"]
+  },
+  "misleading_subdomain": {
+    "label": "Misleading subdomain",
+    "url": "https://microsoft.com.security-review.example-login.co/verify",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["subdomain_impersonation", "official_entity_impersonation"]
+  },
+  "shortener_style": {
+    "label": "Shortened link",
+    "url": "https://bit.ly/3verify-now",
+    "expectedRisk": ["Suspicious", "High Risk"],
+    "expectedFindingTypes": ["shortened_url"]
+  },
+  "safe_company": {
+    "label": "Safe company URL",
+    "url": "https://www.github.com/security",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  },
+  "safe_banking_style": {
+    "label": "Safe banking style URL",
+    "url": "https://www.chase.com/personal/credit-cards",
+    "expectedRisk": ["Safe", "Suspicious"],
+    "expectedFindingTypes": []
+  }
+}
