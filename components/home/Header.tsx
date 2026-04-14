@@ -1,4 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
+
+import appLogo from "@/assets/app_logo.png";
 
 type HeaderProps = {
   active?: "Home" | "Scans" | "Privacy" | "Support";
@@ -16,7 +19,10 @@ export function Header({ active = "Home" }: HeaderProps) {
     <header className="fixed inset-x-0 top-0 z-50">
       <nav className="mx-auto flex w-full max-w-full items-center justify-between border-b border-white/5 bg-primary-container/88 px-4 py-5 backdrop-blur-xl sm:px-6 md:px-12 lg:px-16">
         <Link href="/" className="font-headline text-xl font-black tracking-tight text-vellum">
-          CyberCoach
+          <span className="flex items-center gap-3">
+            <Image src={appLogo} alt="CyberCoach logo" className="h-8 w-8 rounded-sm object-cover" priority />
+            <span>CyberCoach</span>
+          </span>
         </Link>
 
         <div className="flex items-center gap-4 md:hidden">

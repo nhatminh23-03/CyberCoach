@@ -1,12 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
   "/api/scan/capabilities/route": "app/api/scan/capabilities/route.js",
-  "/scan/url/page": "app/scan/url/page.js",
-  "/api/scan/history/route": "app/api/scan/history/route.js",
-  "/api/scan/message-samples/route": "app/api/scan/message-samples/route.js",
-  "/scan/page": "app/scan/page.js",
-  "/api/intel/feed/route": "app/api/intel/feed/route.js",
-  "/scan/screenshot/page": "app/scan/screenshot/page.js",
-  "/scan/voice/page": "app/scan/voice/page.js"
+  "/api/scan/history/route": "app/api/scan/history/route.js"
 }
