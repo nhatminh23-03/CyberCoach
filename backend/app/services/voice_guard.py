@@ -8,6 +8,7 @@ from threading import Lock
 from typing import Any
 from uuid import uuid4
 
+from .pii import redact_pii
 
 DEFAULT_CHALLENGE_QUESTIONS = [
     "Ask them to pause while you call the person or organization back using the number you already trust.",
@@ -129,6 +130,24 @@ def dedupe_transcript_segments(segments: list[dict[str, Any]]) -> list[dict[str,
     return normalized[-20:]
 
 
+def protect_transcript_text(text: str, *, privacy_mode: bool) -> str:
+    if not privacy_mode:
+        return text.strip()
+    protected, _ = redact_pii(text.strip())
+    return protected
+
+
+def protect_transcript_segments(segments: list[dict[str, Any]], *, privacy_mode: bool) -> list[dict[str, str]]:
+    normalized = dedupe_transcript_segments(segments)
+    if not privacy_mode:
+        return normalized
+    protected: list[dict[str, str]] = []
+    for item in normalized:
+        redacted_text, _ = redact_pii(item["text"])
+        protected.append({"text": redacted_text, "timestamp": item["timestamp"]})
+    return protected
+
+
 @dataclass
 class VoiceSession:
     session_id: str
@@ -216,8 +235,8 @@ class InMemoryVoiceSessionStore:
             if not session:
                 raise ValueError("Live call session not found. Start a new session and try again.")
 
-            session.transcript_text = transcript_text.strip()
-            session.transcript_segments = dedupe_transcript_segments(transcript_segments)
+            session.transcript_text = protect_transcript_text(transcript_text, privacy_mode=session.privacy_mode)
+            session.transcript_segments = protect_transcript_segments(transcript_segments, privacy_mode=session.privacy_mode)
             session.voice_signals = dedupe_voice_signals(voice_signals)
             session.elapsed_seconds = max(0, int(elapsed_seconds))
             session.updated_at = _timestamp()

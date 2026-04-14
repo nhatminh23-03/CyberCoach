@@ -99,6 +99,30 @@ describe("scan adapters", () => {
     expect(report).toContain("Embedded Links");
   });
 
+  it("normalizes suspicious copy-report content into safe plain text", () => {
+    const adapted = adaptMessageScanResult({
+      ...baseResponse,
+      scan_type: "message",
+      summary: "Line one\r\n## injected heading\r\n[click me](https://evil.example)",
+      top_reasons: ["- [ ] fake task item"],
+      recommended_actions: ["Do not click [`now`](https://evil.example)"],
+      metadata: {
+        ...baseResponse.metadata,
+        document: undefined,
+      },
+    }, {
+      locale: "en",
+      privacyMode: true,
+    });
+
+    const report = buildPlainTextReport(adapted);
+
+    expect(report).toContain("Summary: Line one\n## injected heading\n[click me](https://evil.example)");
+    expect(report).toContain("1. - [ ] fake task item");
+    expect(report).toContain("1. Do not click [`now`](https://evil.example)");
+    expect(report).not.toContain("\r");
+  });
+
   it("maps backend scan capabilities into the frontend-friendly shape", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(

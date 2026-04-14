@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 from uuid import uuid4
 
@@ -53,6 +54,122 @@ def _confidence_label(confidence_score: float | None, heuristic_score: int) -> s
 
 def _humanize_pattern(pattern: str) -> str:
     return pattern.replace("_", " ").title()
+
+
+def _sanitize_model_errors(model_errors: list[dict[str, str]] | None) -> list[dict[str, str]]:
+    sanitized: list[dict[str, str]] = []
+    for item in model_errors or []:
+        slot = str(item.get("slot") or "primary")
+        model = str(item.get("model") or "Configured model")
+        sanitized.append(
+            {
+                "slot": slot,
+                "model": model,
+                "error": "This model review was unavailable for this scan.",
+            }
+        )
+    return sanitized
+
+
+def _protected_text(value: str | None, *, privacy_mode: bool) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    if not privacy_mode:
+        return text
+    protected, _ = redact_pii(text)
+    return protected
+
+
+def _protected_segments(segments: list[dict[str, Any]] | None, *, privacy_mode: bool) -> list[dict[str, Any]]:
+    if not segments:
+        return []
+    protected: list[dict[str, Any]] = []
+    for item in segments:
+        next_item = dict(item)
+        next_item["text"] = _protected_text(str(item.get("text") or ""), privacy_mode=privacy_mode) or ""
+        protected.append(next_item)
+    return protected
+
+
+def _sanitize_ocr_metadata(ocr_metadata: dict[str, Any] | None, *, privacy_mode: bool) -> dict[str, Any]:
+    if not ocr_metadata:
+        return {}
+    sanitized = deepcopy(ocr_metadata)
+    for key in ("extracted_text", "analysis_text", "original_extracted_text", "ocr_override_text"):
+        if key in sanitized:
+            sanitized[key] = _protected_text(sanitized.get(key), privacy_mode=privacy_mode)
+    if isinstance(sanitized.get("qr_payloads"), list):
+        sanitized["qr_payloads"] = [
+            _protected_text(item, privacy_mode=privacy_mode) or "" for item in sanitized["qr_payloads"]
+        ]
+    return sanitized
+
+
+def _sanitize_document_metadata(document_metadata: dict[str, Any] | None, *, privacy_mode: bool) -> dict[str, Any]:
+    if not document_metadata:
+        return {}
+    sanitized = deepcopy(document_metadata)
+    for key in ("text_preview", "extracted_text", "ocr_text"):
+        if key in sanitized:
+            sanitized[key] = _protected_text(sanitized.get(key), privacy_mode=privacy_mode)
+    if isinstance(sanitized.get("extracted_urls"), list):
+        sanitized["extracted_urls"] = [
+            _protected_text(item, privacy_mode=privacy_mode) or "" for item in sanitized["extracted_urls"]
+        ]
+    if isinstance(sanitized.get("qr_payloads"), list):
+        sanitized["qr_payloads"] = [
+            _protected_text(item, privacy_mode=privacy_mode) or "" for item in sanitized["qr_payloads"]
+        ]
+    if isinstance(sanitized.get("link_pairs"), list):
+        next_pairs: list[dict[str, Any]] = []
+        for item in sanitized["link_pairs"]:
+            if not isinstance(item, dict):
+                continue
+            next_item = dict(item)
+            for key in ("display_text", "target_url"):
+                if key in next_item:
+                    next_item[key] = _protected_text(next_item.get(key), privacy_mode=privacy_mode)
+            next_pairs.append(next_item)
+        sanitized["link_pairs"] = next_pairs
+    return sanitized
+
+
+def _sanitize_voice_metadata(voice_metadata: dict[str, Any] | None, *, privacy_mode: bool) -> dict[str, Any]:
+    if not voice_metadata:
+        return {}
+    sanitized = deepcopy(voice_metadata)
+    if "transcript_text" in sanitized:
+        sanitized["transcript_text"] = _protected_text(sanitized.get("transcript_text"), privacy_mode=privacy_mode)
+    if "transcript_segments" in sanitized:
+        sanitized["transcript_segments"] = _protected_segments(sanitized.get("transcript_segments"), privacy_mode=privacy_mode)
+    return sanitized
+
+
+def _sanitize_url_live_inspection(items: list[dict[str, Any]] | None, *, privacy_mode: bool) -> list[dict[str, Any]]:
+    if not items:
+        return []
+    sanitized: list[dict[str, Any]] = []
+    for item in items:
+        next_item = deepcopy(item)
+        for key in ("normalized_url", "final_url", "meta_refresh_target", "page_excerpt"):
+            if key in next_item:
+                next_item[key] = _protected_text(next_item.get(key), privacy_mode=privacy_mode)
+        if isinstance(next_item.get("redirect_chain"), list):
+            redirect_chain: list[dict[str, Any]] = []
+            for redirect in next_item["redirect_chain"]:
+                if not isinstance(redirect, dict):
+                    continue
+                redirect_chain.append(
+                    {
+                        **redirect,
+                        "from_url": _protected_text(redirect.get("from_url"), privacy_mode=privacy_mode),
+                        "to_url": _protected_text(redirect.get("to_url"), privacy_mode=privacy_mode),
+                    }
+                )
+            next_item["redirect_chain"] = redirect_chain
+        sanitized.append(next_item)
+    return sanitized
 
 
 def _primary_finding(findings: list[dict[str, Any]]) -> dict[str, Any] | None:
@@ -136,6 +253,7 @@ def _build_unified_response(
     gpt_result: dict[str, Any] | None = None,
     model_errors: list[dict[str, str]] | None = None,
     persist_history: bool = True,
+    privacy_mode: bool = False,
 ) -> ScanResponse:
     risk_level = llm_result.get("risk_level", "safe")
     reasons = llm_result.get("reasons") or []
@@ -148,6 +266,7 @@ def _build_unified_response(
     signals = [item["detail"] for item in heuristic_findings] or reasons
     likely_pattern = _humanize_pattern(primary_finding["type"]) if primary_finding else RISK_LABELS.get(risk_level, "Safe")
 
+    protected_input = _protected_text(redacted_input if privacy_mode else original_input, privacy_mode=False) or ""
     payload = ScanResponse(
         scan_type=scan_type,
         risk_label=RISK_LABELS.get(risk_level, "Safe"),
@@ -158,18 +277,22 @@ def _build_unified_response(
         top_reasons=reasons[:3] or signals[:3],
         recommended_actions=actions[:3],
         signals=signals,
-        original_input=original_input,
-        redacted_input=redacted_input,
+        original_input=protected_input,
+        redacted_input=redacted_input if privacy_mode else None,
         provider_used=provider_used,
         metadata={
             "language": language,
+            "privacy_mode": privacy_mode,
             "risk_level": risk_level,
             "confidence_score": confidence_score,
             "heuristic_score": heuristics.get("score", 0),
             "heuristic_findings": heuristic_findings,
             "urls": heuristics.get("urls", []),
             "url_evidence": heuristics.get("url_evidence", []),
-            "url_live_inspection": heuristics.get("live_url_inspection", []),
+            "url_live_inspection": _sanitize_url_live_inspection(
+                heuristics.get("live_url_inspection", []),
+                privacy_mode=privacy_mode,
+            ),
             "evidence_buckets": heuristics.get("evidence_buckets", []),
             "redactions": redactions,
             "redaction_count": len(redactions),
@@ -179,17 +302,18 @@ def _build_unified_response(
             "model_runs": llm_result.get("model_runs", []),
             "claude_result": claude_result,
             "gpt_result": gpt_result,
-            "model_errors": model_errors or [],
-            "ocr": ocr_metadata or {},
-            "document": document_metadata or {},
-            "voice": voice_metadata or {},
+            "model_errors": _sanitize_model_errors(model_errors),
+            "ocr": _sanitize_ocr_metadata(ocr_metadata, privacy_mode=privacy_mode),
+            "document": _sanitize_document_metadata(document_metadata, privacy_mode=privacy_mode),
+            "voice": _sanitize_voice_metadata(voice_metadata, privacy_mode=privacy_mode),
         },
     )
 
     if persist_history:
         entry = history_store.add(payload.model_dump())
-        payload.metadata["history_id"] = entry.entry_id
-        payload.metadata["history_count"] = history_store.count()
+        if entry is not None:
+            payload.metadata["history_id"] = entry.entry_id
+            payload.metadata["history_count"] = history_store.count()
     return payload
 
 
@@ -242,7 +366,7 @@ def _analyze_text_input(scan_type: str, text: str, language: str, privacy_mode: 
     return _build_unified_response(
         scan_type=scan_type,
         original_input=original_input,
-        redacted_input=redacted_input if privacy_mode else None,
+        redacted_input=redacted_input,
         redactions=redactions,
         heuristics=heuristics,
         llm_result=result,
@@ -251,6 +375,7 @@ def _analyze_text_input(scan_type: str, text: str, language: str, privacy_mode: 
         claude_result=claude_result,
         gpt_result=gpt_result,
         model_errors=model_errors,
+        privacy_mode=privacy_mode,
     )
 
 
@@ -351,7 +476,7 @@ def analyze_screenshot(
     return _build_unified_response(
         scan_type="screenshot",
         original_input=analysis_input,
-        redacted_input=redacted_input if privacy_mode else None,
+        redacted_input=redacted_input,
         redactions=redactions,
         heuristics=heuristics,
         llm_result=result,
@@ -361,6 +486,7 @@ def analyze_screenshot(
         claude_result=claude_result,
         gpt_result=gpt_result,
         model_errors=model_errors,
+        privacy_mode=privacy_mode,
     )
 
 
@@ -454,7 +580,7 @@ def analyze_document(
     return _build_unified_response(
         scan_type="document",
         original_input=analysis_input,
-        redacted_input=redacted_input if privacy_mode else None,
+        redacted_input=redacted_input,
         redactions=redactions,
         heuristics=heuristics,
         llm_result=result,
@@ -464,6 +590,7 @@ def analyze_document(
         claude_result=claude_result,
         gpt_result=gpt_result,
         model_errors=model_errors,
+        privacy_mode=privacy_mode,
     )
 
 
@@ -722,6 +849,7 @@ def _analyze_voice_text(
             language=normalized_language,
             voice_metadata=voice_metadata,
             persist_history=persist_history,
+            privacy_mode=privacy_mode,
         )
 
     redacted_input, redactions = redact_pii(original_input) if privacy_mode else (original_input, [])
@@ -844,7 +972,7 @@ def _analyze_voice_text(
     return _build_unified_response(
         scan_type="voice",
         original_input=original_input,
-        redacted_input=redacted_input if privacy_mode else None,
+        redacted_input=redacted_input,
         redactions=redactions,
         heuristics=heuristics,
         llm_result=result,
@@ -855,6 +983,7 @@ def _analyze_voice_text(
         gpt_result=gpt_result,
         model_errors=model_errors,
         persist_history=persist_history,
+        privacy_mode=privacy_mode,
     )
 
 
@@ -1021,6 +1150,7 @@ def analyze_voice_recording(
             language=normalized_language,
             voice_metadata=voice_metadata,
             persist_history=True,
+            privacy_mode=privacy_mode,
         )
 
     redacted_input, redactions = redact_pii(transcript_text) if privacy_mode else (transcript_text, [])
@@ -1086,7 +1216,7 @@ def analyze_voice_recording(
     return _build_unified_response(
         scan_type="voice",
         original_input=transcript_text,
-        redacted_input=redacted_input if privacy_mode else None,
+        redacted_input=redacted_input,
         redactions=redactions,
         heuristics=heuristics,
         llm_result=result,
@@ -1097,4 +1227,5 @@ def analyze_voice_recording(
         gpt_result=gpt_result,
         model_errors=model_errors,
         persist_history=True,
+        privacy_mode=privacy_mode,
     )

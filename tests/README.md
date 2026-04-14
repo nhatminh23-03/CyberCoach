@@ -23,6 +23,18 @@ CyberCoach now has a layered automated test foundation so we can validate both s
   - `GET /api/scan/history`
   - `GET /api/scan/url-precheck`
   - `POST /api/report`
+- High-priority regression coverage now explicitly includes:
+  - privacy-mode redaction surviving into any opt-in history persistence
+  - oversized message, transcript, screenshot, document, voice, and report payload rejection
+  - route-level SSRF blocking for local/private and mixed-DNS destinations
+  - markdown export escaping for user-controlled content
+  - real backend-backed smoke paths for message, URL, screenshot, document, and Call Guard upload/live flows
+- Public scan history is intentionally disabled by default. `ENABLE_PUBLIC_SCAN_HISTORY` must be set explicitly for local-only experiments, because unscoped shared history is not safe for production.
+- Production config validation now fails fast when:
+  - backend production CORS is still pointed at localhost
+  - `LLM_PROVIDER` is set in production without its required API key
+  - frontend production builds are missing `API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL`
+  - frontend production builds still point those API base URLs at localhost
 - Frontend/Vitest tests for:
   - homepage quick-scan routing
   - homepage URL-vs-message detection behavior
@@ -185,6 +197,39 @@ This is strict enough to catch real regressions while still avoiding overfitting
 - Voice upload transcription is also API-dependent, so the default suite uses transcript overrides for deterministic coverage.
 - Playwright e2e tests are implemented, but they still depend on local Chromium availability.
 - Real browser microphone streaming for live Call Guard is not exercised in CI-style tests yet; the test foundation covers upload mode and backend live-session state transitions instead.
+
+## Pre-Deploy Manual QA Checklist
+
+- Homepage quick scan:
+  - paste a normal message and confirm it routes to Message Scan and autoruns
+  - paste a suspicious link and confirm it routes to URL Scan and autoruns
+- Message Scan:
+  - run one suspicious sample and one safe sample
+  - verify privacy mode on/off changes returned content as expected
+- URL Scan:
+  - test one suspicious URL and one safe URL
+  - confirm destination-check messaging looks correct when inspection is blocked or unavailable
+- Screenshot Scan:
+  - upload a screenshot with OCR override text
+  - verify result cards, report actions, and privacy wording
+- Document Scan:
+  - upload a benign PDF/DOCX and a suspicious one with links
+  - verify protected/image-only/macro-enabled edge cases if those formats are enabled in deploy
+- Call Guard:
+  - test upload-recording mode end to end
+  - test live start, update, and finalize at least once in the deployed browser stack
+- Reports:
+  - export TXT and MD
+  - confirm no broken markdown structure when inputs contain brackets, hashes, or link syntax
+- Platform:
+  - verify mobile/tablet layouts for homepage, one standard scan page, and Call Guard
+  - verify backend health, provider connectivity, and production env validation on boot
+
+## Remaining Known Gaps
+
+- Real browser microphone capture and websocket live-stream behavior still need manual verification in the deployed browser/runtime combination.
+- Optional live-model tests remain network- and provider-dependent, so they should stay non-blocking in CI.
+- Playwright coverage still uses mocked backend responses for UI flows; it is best paired with the backend integration suite rather than treated as full-stack proof by itself.
 
 ## Why this foundation matters
 

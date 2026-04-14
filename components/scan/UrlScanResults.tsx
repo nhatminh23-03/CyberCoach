@@ -28,6 +28,16 @@ type UrlScanResultsProps = {
 export function getUrlResultCopy(locale: SupportedLocale) {
   if (locale === "vi") {
     return {
+      reviewActivity: "Hoat Dong Kiem Tra",
+      reviewReady: "San Sang Kiem Tra",
+      awaitingLink: "Dang Cho Lien Ket",
+      activitySummaryReady: "CyberCoach da chuan bi xong ban xem truoc cua lien ket nay va san sang quet day du.",
+      activitySummaryIdle: "Hoat dong se hien thi o day sau khi ban dan lien ket vao de cho thay CyberCoach doc va kiem tra no nhu the nao.",
+      normalizedHost: "Host Chuan Hoa",
+      precheckStatus: "Trang Thai So Bo",
+      structuralSignals: "Dau Hieu Cau Truc",
+      noStructuralSignals: "Chua thay dau hieu cau truc ro rang trong ban xem truoc nay.",
+      lookupReady: "San sang cho quet day du",
       urlMetadata: "Chi Tiet Lien Ket",
       forensicBreakdown: "Nhung Gi Da Kiem Tra",
       evidenceBuckets: "Nguon Rui Ro",
@@ -78,6 +88,16 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "es") {
     return {
+      reviewActivity: "Actividad de Revision",
+      reviewReady: "Precheck listo",
+      awaitingLink: "Esperando enlace",
+      activitySummaryReady: "CyberCoach ya preparo la vista previa de este enlace y puede continuar con la revision completa.",
+      activitySummaryIdle: "La actividad aparecera aqui cuando pegues un enlace para mostrar como CyberCoach lo interpreta antes del analisis completo.",
+      normalizedHost: "Host normalizado",
+      precheckStatus: "Estado previo",
+      structuralSignals: "Senales estructurales",
+      noStructuralSignals: "No se detectaron senales estructurales claras en esta vista previa.",
+      lookupReady: "Listo para la revision completa",
       urlMetadata: "Detalles del Enlace",
       forensicBreakdown: "Lo que se reviso",
       evidenceBuckets: "De donde viene el riesgo",
@@ -128,6 +148,16 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "zh") {
     return {
+      reviewActivity: "检查活动",
+      reviewReady: "预检查已完成",
+      awaitingLink: "等待链接",
+      activitySummaryReady: "CyberCoach 已为这个链接准备好预检查结果，可以继续完整扫描。",
+      activitySummaryIdle: "当你粘贴链接后，这里会显示 CyberCoach 如何读取并预检查这个链接。",
+      normalizedHost: "规范化主机",
+      precheckStatus: "预检查状态",
+      structuralSignals: "结构信号",
+      noStructuralSignals: "这次预检查还没有发现明显的结构异常。",
+      lookupReady: "可继续完整扫描",
       urlMetadata: "链接详情",
       forensicBreakdown: "已检查内容",
       evidenceBuckets: "风险主要来自哪里",
@@ -178,6 +208,16 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "ko") {
     return {
+      reviewActivity: "검토 활동",
+      reviewReady: "사전 점검 완료",
+      awaitingLink: "링크 대기 중",
+      activitySummaryReady: "CyberCoach가 이 링크의 미리보기를 준비했고 전체 검토를 진행할 수 있습니다.",
+      activitySummaryIdle: "링크를 붙여 넣으면 전체 분석 전에 CyberCoach가 어떻게 읽고 점검하는지 여기에 표시됩니다.",
+      normalizedHost: "정규화된 호스트",
+      precheckStatus: "사전 점검 상태",
+      structuralSignals: "구조 신호",
+      noStructuralSignals: "이 미리보기에서는 뚜렷한 구조 신호가 발견되지 않았습니다.",
+      lookupReady: "전체 검토 준비 완료",
       urlMetadata: "링크 세부정보",
       forensicBreakdown: "확인한 내용",
       evidenceBuckets: "위험이 오는 곳",
@@ -228,6 +268,16 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "tl") {
     return {
+      reviewActivity: "Aktibidad ng Pagsusuri",
+      reviewReady: "Handa na ang precheck",
+      awaitingLink: "Naghihintay ng link",
+      activitySummaryReady: "Naihanda na ng CyberCoach ang preview ng link na ito at handa na para sa buong scan.",
+      activitySummaryIdle: "Lilitaw dito ang aktibidad kapag nag-paste ka ng link para makita kung paano ito babasahin ng CyberCoach bago ang buong scan.",
+      normalizedHost: "Na-normalize na host",
+      precheckStatus: "Katayuan ng precheck",
+      structuralSignals: "Mga palatandaang istruktural",
+      noStructuralSignals: "Wala pang malinaw na structural signal sa preview na ito.",
+      lookupReady: "Handa para sa buong scan",
       urlMetadata: "Detalye ng Link",
       forensicBreakdown: "Ano ang Sinuri",
       evidenceBuckets: "Saan nanggagaling ang panganib",
@@ -278,6 +328,16 @@ export function getUrlResultCopy(locale: SupportedLocale) {
 
   if (locale === "fr") {
     return {
+      reviewActivity: "Activite de Verification",
+      reviewReady: "Precontrole pret",
+      awaitingLink: "En attente du lien",
+      activitySummaryReady: "CyberCoach a prepare l'aperçu de ce lien et peut maintenant lancer la verification complete.",
+      activitySummaryIdle: "L'activite s'affichera ici quand vous collerez un lien pour montrer comment CyberCoach le lit avant l'analyse complete.",
+      normalizedHost: "Hote normalise",
+      precheckStatus: "Statut du precontrole",
+      structuralSignals: "Signaux structurels",
+      noStructuralSignals: "Aucun signal structurel clair n'a ete releve dans cet apercu.",
+      lookupReady: "Pret pour la verification complete",
       urlMetadata: "Details du Lien",
       forensicBreakdown: "Ce qui a ete verifie",
       evidenceBuckets: "D'ou vient le risque",
@@ -327,6 +387,16 @@ export function getUrlResultCopy(locale: SupportedLocale) {
   }
 
   return {
+    reviewActivity: "Review Activity",
+    reviewReady: "Precheck Ready",
+    awaitingLink: "Waiting For A Link",
+    activitySummaryReady: "CyberCoach has already prepared a preview of this link and is ready for the full scan.",
+    activitySummaryIdle: "Activity appears here once you paste a link, so you can see how CyberCoach reads it before the full scan runs.",
+    normalizedHost: "Normalized Host",
+    precheckStatus: "Precheck Status",
+    structuralSignals: "Structural Signals",
+    noStructuralSignals: "No clear structural warning signs were found in this preview.",
+    lookupReady: "Ready for full review",
     urlMetadata: "Link Details",
     forensicBreakdown: "What We Checked",
     evidenceBuckets: "Where the risk is coming from",
@@ -410,7 +480,14 @@ function ResultShell({
   );
 }
 
-function PlaceholderFeatures() {
+function PlaceholderFeatures({ precheck, locale }: { precheck: UrlPrecheck | null; locale: SupportedLocale }) {
+  const urlCopy = getUrlResultCopy(locale);
+  const structuralSignals = [
+    precheck?.isRawIp ? urlCopy.rawIp : null,
+    precheck?.isShortened ? urlCopy.urlShortener : null,
+    precheck?.phishTankHit ? urlCopy.phishTankMatch : null
+  ].filter(Boolean);
+
   return (
     <section className="space-y-6 animate-fade-up">
       <div className="grid grid-cols-12 gap-6">
@@ -440,24 +517,73 @@ function PlaceholderFeatures() {
       <div className="animate-fade-up border-l-2 border-secondary bg-primary-container p-8" style={{ animationDelay: "90ms" }}>
         <div className="mb-6 flex items-start justify-between gap-6">
           <div>
-            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">Live Interception Log</p>
-            <p className="mt-2 text-sm text-on-primary-container">Session ID: CC-URL-ALPHA</p>
+            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">{urlCopy.reviewActivity}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-primary-container">
+              {precheck ? urlCopy.activitySummaryReady : urlCopy.activitySummaryIdle}
+            </p>
           </div>
           <div className="border border-secondary/30 bg-secondary/10 px-3 py-2 font-label text-[9px] font-bold uppercase tracking-[0.18em] text-secondary">
-            Encrypted Session
+            {precheck ? urlCopy.reviewReady : urlCopy.awaitingLink}
           </div>
         </div>
-        <div className="space-y-3 font-mono text-[12px] text-primary">
-          <div>
-            <span className="text-secondary">[08:42:11]</span> Initializing URL inspection environment...
+        {precheck ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.normalizedHost}</p>
+              <p className="mt-2 break-all text-sm leading-relaxed text-primary">{precheck.domain}</p>
+            </div>
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.precheckStatus}</p>
+              <p className="mt-2 text-sm leading-relaxed text-primary">{urlCopy.lookupReady}</p>
+            </div>
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.registeredDomain}</p>
+              <p className="mt-2 break-all text-sm leading-relaxed text-primary">{precheck.registrableDomain}</p>
+            </div>
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.phishingDatabase}</p>
+              <p className="mt-2 text-sm leading-relaxed text-primary">
+                {precheck.phishTankLoaded
+                  ? precheck.phishTankHit
+                    ? urlCopy.foundInPhishTank
+                    : urlCopy.notFound
+                  : urlCopy.datasetUnavailable}
+              </p>
+            </div>
+            <div className="ghost-border bg-surface-container-lowest/30 p-4 md:col-span-2">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.structuralSignals}</p>
+              {structuralSignals.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {structuralSignals.map((signal) => (
+                    <span
+                      key={signal}
+                      className="border border-secondary/30 bg-secondary/10 px-3 py-2 font-label text-[9px] font-bold uppercase tracking-[0.16em] text-secondary"
+                    >
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm leading-relaxed text-primary">{urlCopy.noStructuralSignals}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <span className="text-secondary">[08:42:13]</span> Waiting for target endpoint input...
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.normalizedUrl}</p>
+              <p className="mt-2 text-sm leading-relaxed text-primary">{urlCopy.precheckPlaceholder}</p>
+            </div>
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.registeredDomain}</p>
+              <p className="mt-2 text-sm leading-relaxed text-primary">{urlCopy.activitySummaryIdle}</p>
+            </div>
+            <div className="ghost-border bg-surface-container-lowest/30 p-4">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">{urlCopy.phishingDatabase}</p>
+              <p className="mt-2 text-sm leading-relaxed text-primary">{urlCopy.datasetHint}</p>
+            </div>
           </div>
-          <div>
-            <span className="text-secondary">[08:42:15]</span> DNS, PhishTank, and heuristic checks will appear after analysis.
-          </div>
-        </div>
+        )}
       </div>
     </section>
   );
@@ -878,7 +1004,7 @@ export function UrlScanResults({
   }
 
   if (!result) {
-    return <PlaceholderFeatures />;
+    return <PlaceholderFeatures precheck={precheck} locale="en" />;
   }
 
   return (

@@ -123,6 +123,143 @@ def test_message_and_url_endpoints_preserve_language_and_privacy_mode(client, me
     assert url_response.json()["metadata"]["language"] == "French"
 
 
+def test_message_privacy_mode_hides_raw_input_in_response(client):
+    response = client.post(
+        "/api/scan/message",
+        json={
+            "text": "Hi, I'm Jane Doe. Call me at 415-555-0100 or email jane@example.com right away.",
+            "language": "en",
+            "privacy_mode": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["original_input"] == payload["redacted_input"]
+    assert "415-555-0100" not in payload["original_input"]
+    assert "jane@example.com" not in payload["original_input"]
+    assert payload["metadata"]["privacy_mode"] is True
+
+
+def test_url_privacy_mode_hides_raw_query_values_in_response(client):
+    response = client.post(
+        "/api/scan/url",
+        json={
+            "url": "https://example.com/reset?email=jane@example.com",
+            "language": "en",
+            "privacy_mode": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["original_input"] == payload["redacted_input"]
+    assert "jane@example.com" not in payload["original_input"]
+
+
+def test_screenshot_privacy_mode_hides_raw_extracted_text(client):
+    image_bytes = png_with_text(["Bank alert", "Call 415-555-0199"])
+
+    response = client.post(
+        "/api/scan/screenshot",
+        files={"image": ("bank-alert.png", image_bytes, "image/png")},
+        data={
+            "language": "en",
+            "privacy_mode": "true",
+            "ocr_override_text": "Hi, I'm Jane Doe. Call 415-555-0199 or email jane@example.com.",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "415-555-0199" not in payload["original_input"]
+    assert "jane@example.com" not in payload["original_input"]
+    assert "415-555-0199" not in payload["metadata"]["ocr"]["analysis_text"]
+    assert "jane@example.com" not in payload["metadata"]["ocr"]["analysis_text"]
+
+
+def test_document_privacy_mode_hides_raw_document_text_in_response_and_report(client):
+    response = client.post(
+        "/api/scan/document",
+        files={
+            "file": (
+                "secure-review.docx",
+                docx_bytes(
+                    paragraphs=["Contact Jane Doe at jane@example.com or 415-555-0177 today."],
+                    links=[("Open secure file", "https://example.com/review?email=jane@example.com")],
+                ),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+        data={"language": "en", "privacy_mode": "true"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "jane@example.com" not in payload["original_input"]
+    assert "415-555-0177" not in payload["original_input"]
+    assert "jane@example.com" not in payload["metadata"]["document"]["extracted_text"]
+    assert "415-555-0177" not in payload["metadata"]["document"]["text_preview"]
+    assert "jane@example.com" not in payload["metadata"]["document"]["link_pairs"][0]["target_url"]
+
+    report = client.post("/api/report", json={"result": payload, "format": "txt"})
+    assert report.status_code == 200
+    assert "jane@example.com" not in report.text
+    assert "415-555-0177" not in report.text
+
+
+def test_voice_privacy_mode_hides_raw_transcript_in_live_and_upload_flows(client):
+    start = client.post("/api/scan/voice/start", json={"language": "en", "privacy_mode": True})
+    session = start.json()
+    transcript = "Hi, this is Jane Doe. Call me back at 415-555-0144 or email jane@example.com."
+
+    update = client.post(
+        "/api/scan/voice/update",
+        json={
+            "session_id": session["session_id"],
+            "transcript_text": transcript,
+            "transcript_segments": [{"text": transcript, "timestamp": ""}],
+            "voice_signals": [],
+            "elapsed_seconds": 5,
+            "include_ai": False,
+        },
+    )
+
+    assert update.status_code == 200
+    live_payload = update.json()
+    assert "415-555-0144" not in live_payload["original_input"]
+    assert "jane@example.com" not in live_payload["metadata"]["voice"]["transcript_text"]
+    assert "415-555-0144" not in live_payload["metadata"]["voice"]["transcript_segments"][0]["text"]
+
+    upload = client.post(
+        "/api/scan/voice/upload",
+        files={"file": ("call.wav", wav_tone_bytes(), "audio/wav")},
+        data={"language": "en", "privacy_mode": "true", "transcript_override_text": transcript},
+    )
+
+    assert upload.status_code == 200
+    upload_payload = upload.json()
+    assert "415-555-0144" not in upload_payload["original_input"]
+    assert "jane@example.com" not in upload_payload["metadata"]["voice"]["transcript_text"]
+
+
+def test_privacy_mode_off_preserves_raw_input_in_response(client):
+    response = client.post(
+        "/api/scan/message",
+        json={
+            "text": "Contact Jane Doe at jane@example.com or 415-555-0188.",
+            "language": "en",
+            "privacy_mode": False,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["redacted_input"] is None
+    assert "jane@example.com" in payload["original_input"]
+    assert "415-555-0188" in payload["original_input"]
+
+
 def test_voice_finalize_returns_clear_error_for_missing_session(client):
     response = client.post(
         "/api/scan/voice/finalize",

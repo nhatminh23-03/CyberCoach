@@ -708,7 +708,7 @@ export function ScreenshotScanPage() {
               <LockIcon className="h-4 w-4 shrink-0 text-secondary" />
               <span>
                 {privacyMode
-                  ? "Nothing is stored by default. Privacy Mode can redact visible personal details before the final review."
+                  ? "Nothing is stored by default. Privacy Mode redacts visible personal details for analysis and keeps raw extracted text out of the returned result when possible."
                   : "Nothing is stored by default. This screenshot is reviewed only for the current session."}
               </span>
             </div>

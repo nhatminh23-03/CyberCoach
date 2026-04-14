@@ -591,7 +591,7 @@ export function DocumentScanPage() {
               <LockIcon className="h-4 w-4 shrink-0 text-secondary" />
               <span>
                 {privacyMode
-                  ? "Nothing is stored by default. Privacy Mode can redact sensitive details before the final review."
+                  ? "Nothing is stored by default. Privacy Mode redacts sensitive details for analysis and keeps raw text out of the returned result when possible."
                   : "Nothing is stored by default. This document is reviewed only for the current session."}
               </span>
             </div>

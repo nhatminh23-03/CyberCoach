@@ -133,15 +133,15 @@ export function ScanRightRail({ historyItems, intelFeedItems, locale }: ScanRigh
 
   return (
     <aside className="space-y-12">
-      <section className="space-y-6 animate-fade-up" style={{ animationDelay: "80ms" }}>
-        <div className="flex items-end justify-between border-b border-outline-variant/20 pb-4">
-          <h2 className="font-headline text-lg font-bold uppercase tracking-tight">Recent Analysis</h2>
-          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-secondary">View All</span>
-        </div>
+      {recentItems.length > 0 ? (
+        <section className="space-y-6 animate-fade-up" style={{ animationDelay: "80ms" }}>
+          <div className="flex items-end justify-between border-b border-outline-variant/20 pb-4">
+            <h2 className="font-headline text-lg font-bold uppercase tracking-tight">Recent Analysis</h2>
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-secondary">View All</span>
+          </div>
 
-        <div className="space-y-4">
-          {recentItems.length > 0 ? (
-            recentItems.map((item) => (
+          <div className="space-y-4">
+            {recentItems.map((item) => (
               <div
                 key={item.id}
                 className="group cursor-pointer border-l-2 border-transparent bg-surface-container-low p-4 transition-colors hover:border-secondary hover:bg-surface-container-high"
@@ -167,17 +167,10 @@ export function ScanRightRail({ historyItems, intelFeedItems, locale }: ScanRigh
                   {relativeTimeLabel(item.createdAt, locale)} • Live session
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="ghost-border bg-surface-container-low p-5">
-              <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Awaiting First Scan</p>
-              <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-                Recent analyses will appear here after your first live scan in this backend session.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section
         className="animate-fade-up relative overflow-hidden bg-primary-container/40 p-8 space-y-8"

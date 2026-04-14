@@ -1642,36 +1642,40 @@ export function VoiceScanPage() {
               </div>
             </div>
 
-            <section className="flex flex-col gap-4 border-t border-outline-variant/20 pt-2 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                <span className="block font-label text-[10px] uppercase tracking-widest text-on-primary-container">
+            <section className="border-t border-outline-variant/20 pt-3">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] lg:items-center lg:gap-8">
+                <div className="space-y-2 pr-0 lg:pr-4">
+                  <span className="block font-label text-[10px] uppercase tracking-widest text-on-primary-container">
                   Review Mode
-                </span>
-                <p className="text-sm leading-relaxed text-on-surface-variant">{modeSummary}</p>
-              </div>
+                  </span>
+                  <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">{modeSummary}</p>
+                </div>
 
-              <div className="inline-flex w-full overflow-hidden border border-outline-variant/24 bg-surface-container-lowest/75 p-1 md:w-auto">
-                {[
-                  { id: "live", label: "Listen Live" },
-                  { id: "upload", label: "Upload Recording" }
-                ].map((option) => {
-                  const active = analysisMode === option.id;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      disabled={listening || starting || stopping || uploadingRecording}
-                      onClick={() => handleAnalysisModeChange(option.id as "live" | "upload")}
-                      className={`min-w-0 flex-1 px-4 py-3 text-center transition-all duration-200 sm:min-w-[10.75rem] sm:flex-none sm:px-5 ${
-                        active
-                          ? "bg-surface-container-low text-vellum shadow-[inset_0_0_0_1px_rgba(225,194,144,0.24)]"
-                          : "text-on-surface-variant hover:bg-surface-container-low/70 hover:text-vellum"
-                      }`}
-                    >
-                      <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em]">{option.label}</span>
-                    </button>
-                  );
-                })}
+                <div className="justify-self-start lg:justify-self-end">
+                  <div className="inline-flex w-full max-w-[28rem] overflow-hidden border border-outline-variant/24 bg-surface-container-lowest/75 p-1.5 sm:max-w-[30rem] lg:w-auto">
+                    {[
+                      { id: "live", label: "Listen Live" },
+                      { id: "upload", label: "Upload Recording" }
+                    ].map((option) => {
+                      const active = analysisMode === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          disabled={listening || starting || stopping || uploadingRecording}
+                          onClick={() => handleAnalysisModeChange(option.id as "live" | "upload")}
+                          className={`min-w-0 flex-1 px-4 py-3 text-center transition-all duration-200 sm:min-w-[11rem] sm:px-6 ${
+                            active
+                              ? "bg-surface-container-low text-vellum shadow-[inset_0_0_0_1px_rgba(225,194,144,0.24)]"
+                              : "text-on-surface-variant hover:bg-surface-container-low/70 hover:text-vellum"
+                          }`}
+                        >
+                          <span className="font-label text-[10px] font-bold uppercase tracking-[0.16em]">{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </section>
 

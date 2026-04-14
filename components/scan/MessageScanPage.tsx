@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LockIcon } from "@/components/home/icons";
 import { Header } from "@/components/home/Header";
@@ -27,7 +27,7 @@ import {
 
 type MessageScanPageProps = {
   initialQuery: string;
-  initialView: string;
+  showArNotice?: boolean;
   initialAutoRun?: boolean;
 };
 
@@ -43,14 +43,9 @@ const languageOptions = [
   { value: "fr", label: "French" }
 ];
 
-const recentComingSoon = {
-  url: "URL Scan is staged next. Message Scan remains active for now.",
-  screenshot: "Screenshot Scan is staged next. Message Scan remains active for now.",
-  ar: "AR Scanner is not live yet. Message Scan remains the active intelligence module.",
-  document: "Document Scan is coming soon. Message Scan remains the active intelligence module."
-} as const;
+const arPreviewNotice = "AR Scanner is not live yet. Message Scan remains the active intelligence module.";
 
-export function MessageScanPage({ initialQuery, initialView, initialAutoRun = false }: MessageScanPageProps) {
+export function MessageScanPage({ initialQuery, showArNotice = false, initialAutoRun = false }: MessageScanPageProps) {
   const [message, setMessage] = useState(initialQuery);
   const [privacyMode, setPrivacyMode] = useState(true);
   const [language, setLanguage] = useState("en");
@@ -160,13 +155,6 @@ export function MessageScanPage({ initialQuery, initialView, initialAutoRun = fa
       cancelled = true;
     };
   }, []);
-
-  const viewNotice = useMemo(() => {
-    if (initialView && initialView in recentComingSoon) {
-      return recentComingSoon[initialView as keyof typeof recentComingSoon];
-    }
-    return null;
-  }, [initialView]);
 
   const characterCount = message.length;
 
@@ -392,7 +380,7 @@ export function MessageScanPage({ initialQuery, initialView, initialAutoRun = fa
               <LockIcon className="h-4 w-4 shrink-0 text-secondary" />
               <span>
                 {privacyMode
-                  ? "Nothing is stored by default. Privacy Mode can redact sensitive details before the final review."
+                  ? "Nothing is stored by default. Privacy Mode redacts sensitive details for analysis and keeps raw text out of the returned result when possible."
                   : "Nothing is stored by default. This message is reviewed only for the current session."}
               </span>
             </div>
@@ -422,7 +410,7 @@ export function MessageScanPage({ initialQuery, initialView, initialAutoRun = fa
               onCopyReport={handleCopyReport}
               onDownloadReport={handleDownloadReport}
               reportBusy={reportBusy}
-              notice={viewNotice}
+              notice={showArNotice ? arPreviewNotice : null}
               decisionHighlightKey={traceHighlightKey}
             />
           </div>

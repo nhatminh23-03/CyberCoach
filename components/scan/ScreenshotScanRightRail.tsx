@@ -35,7 +35,7 @@ function CameraIcon() {
 const notes = [
   "Use full-screen captures when possible so sender names, links, and button labels stay visible.",
   "Blurry photos make the text harder to read. A steady image usually leads to clearer findings and next steps.",
-  "Privacy Mode can redact visible personal details before the final review."
+  "Privacy Mode can redact visible personal details for analysis and keep raw extracted text out of the returned result."
 ];
 
 function formatHistoryTime(isoDate: string, locale: SupportedLocale) {

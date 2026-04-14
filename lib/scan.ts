@@ -1,3 +1,5 @@
+import { resolveDirectBackendApiBase } from "@/lib/runtimeConfig";
+
 export type SupportedLocale = "en" | "es" | "zh" | "vi" | "ko" | "tl" | "fr";
 
 export type BackendHeuristicFinding = {
@@ -427,6 +429,7 @@ export type ScanCapabilities = {
   screenshotRequiresApiKey: boolean;
   llmProvider: string | null;
   llmModel: string | null;
+  scanHistoryAvailable?: boolean;
   voiceLiveBrowserMode?: boolean;
   voiceLiveStreamingAvailable?: boolean;
   voiceRecordingUploadAvailable?: boolean;
@@ -519,28 +522,70 @@ type ScanLocaleCopy = {
 };
 
 const API_BASE_URL = "/api";
-const DEFAULT_DIRECT_BACKEND_API_BASE = "http://127.0.0.1:8000/api";
+let scanHistoryAvailableCache: boolean | null = null;
 
-function getDirectBackendApiBase() {
-  if (typeof window !== "undefined") {
-    const configured = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (configured?.trim()) {
-      return configured.trim();
-    }
-
-    const host = window.location.hostname || "127.0.0.1";
-    if (host === "localhost" || host === "127.0.0.1") {
-      const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-      return `${protocol}//${host}:8000/api`;
-    }
+function normalizeReportText(value: unknown, multiline = false) {
+  if (value == null) {
+    return "";
   }
 
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_DIRECT_BACKEND_API_BASE;
+  const normalized = String(value)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+
+  if (multiline) {
+    return normalized
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .join("\n")
+      .trim();
+  }
+
+  return normalized
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function getDirectBackendApiBase() {
+  return resolveDirectBackendApiBase({
+    publicApiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV,
+    appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? process.env.APP_ENV,
+    environment: process.env.NEXT_PUBLIC_ENVIRONMENT ?? process.env.ENVIRONMENT,
+    browserHostname: typeof window !== "undefined" ? window.location.hostname : undefined,
+    browserProtocol: typeof window !== "undefined" ? window.location.protocol : undefined,
+  });
 }
 
 export function getVoiceRealtimeSocketUrl() {
   const base = getDirectBackendApiBase().replace(/\/$/, "");
   return base.replace(/^http:/i, "ws:").replace(/^https:/i, "wss:") + "/scan/voice/ws";
+}
+
+async function fetchHistoryResponse() {
+  if (scanHistoryAvailableCache === false) {
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/scan/history`, {
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      scanHistoryAvailableCache = false;
+      return null;
+    }
+    return null;
+  }
+
+  scanHistoryAvailableCache = true;
+  return response;
 }
 
 const FALLBACK_MESSAGE_SAMPLES: MessageSamplesResponse = {
@@ -631,8 +676,9 @@ const SCAN_COPY: Record<SupportedLocale, ScanLocaleCopy> = {
     confidenceLabels: { Low: "Low", Medium: "Medium", High: "High" },
     providerLabels: { heuristic: "Local Review", openrouter: "AI Review (OpenRouter)", anthropic: "AI Review (Anthropic)" },
     privacy: {
-      redacted: (count) => `${count} piece${count === 1 ? "" : "s"} of personal info ${count === 1 ? "was" : "were"} redacted before analysis`,
-      enabledNoRedaction: "Privacy mode was enabled. No personal details needed redaction before analysis."
+      redacted: (count) =>
+        `${count} piece${count === 1 ? "" : "s"} of personal info ${count === 1 ? "was" : "were"} redacted before analysis and hidden from the returned result`,
+      enabledNoRedaction: "Privacy mode was enabled. No personal details needed redaction, and raw input was not returned separately."
     },
     tips: {
       urgency: "Scammers create panic so you act before thinking. If a message is rushing you, slow down before you click.",
@@ -2009,35 +2055,35 @@ export function buildPlainTextReport(result: MessageScanResult) {
   const reportCopy = SCAN_COPY[result.locale].report;
   const lines = [
     `=== ${reportCopy.title} ===`,
-    `${reportCopy.riskLevel}: ${result.riskLabelDisplay}`,
-    `${reportCopy.confidence}: ${result.confidenceDisplay}`,
-    `Decision Source: ${result.decisionSource}`,
-    `${reportCopy.likelyPattern}: ${result.likelyScamPattern}`,
+    `${reportCopy.riskLevel}: ${normalizeReportText(result.riskLabelDisplay)}`,
+    `${reportCopy.confidence}: ${normalizeReportText(result.confidenceDisplay)}`,
+    `Decision Source: ${normalizeReportText(result.decisionSource)}`,
+    `${reportCopy.likelyPattern}: ${normalizeReportText(result.likelyScamPattern)}`,
     "",
-    `${reportCopy.summary}: ${result.summary}`,
+    `${reportCopy.summary}: ${normalizeReportText(result.summary, true)}`,
     "",
     `${reportCopy.keyFindings}:`
   ];
 
   result.topReasons.forEach((reason, index) => {
-    lines.push(`  ${index + 1}. ${reason}`);
+    lines.push(`  ${index + 1}. ${normalizeReportText(reason)}`);
   });
 
   lines.push("", `${reportCopy.recommendedActions}:`);
 
   result.recommendedActions.forEach((action, index) => {
-    lines.push(`  ${index + 1}. ${action}`);
+    lines.push(`  ${index + 1}. ${normalizeReportText(action)}`);
   });
 
   if (result.consensus?.summary) {
-    lines.push("", `Consensus: ${result.consensus.summary}`);
+    lines.push("", `Consensus: ${normalizeReportText(result.consensus.summary, true)}`);
   }
 
   if (result.evidenceBuckets.length > 0) {
     lines.push("", "Evidence Buckets:");
     result.evidenceBuckets.forEach((bucket) => {
       lines.push(`  - ${bucket.key}: score ${bucket.score}, findings ${bucket.finding_count}`);
-      lines.push(`    ${bucket.summary}`);
+      lines.push(`    ${normalizeReportText(bucket.summary, true)}`);
     });
   }
 
@@ -2048,34 +2094,34 @@ export function buildPlainTextReport(result: MessageScanResult) {
       lines.push("  - Manual text override: yes");
     }
     if (result.screenshotOcr.layoutSummary) {
-      lines.push(`  - Layout: ${result.screenshotOcr.layoutSummary}`);
+      lines.push(`  - Layout: ${normalizeReportText(result.screenshotOcr.layoutSummary, true)}`);
     }
     if (result.screenshotOcr.warnings.length > 0) {
       lines.push("  - OCR warnings:");
       result.screenshotOcr.warnings.forEach((warning) => {
-        lines.push(`    * ${warning}`);
+        lines.push(`    * ${normalizeReportText(warning)}`);
       });
     }
     if (result.screenshotOcr.visualSignals.length > 0) {
       lines.push("  - Visual signals:");
       result.screenshotOcr.visualSignals.forEach((signal) => {
-        lines.push(`    * [${signal.severity}] ${signal.detail}`);
+        lines.push(`    * [${normalizeReportText(signal.severity)}] ${normalizeReportText(signal.detail)}`);
       });
     }
     if (result.screenshotOcr.qrPayloads.length > 0) {
       lines.push("", "Detected QR Codes:");
       result.screenshotOcr.qrPayloads.forEach((payload, index) => {
-        lines.push(`  ${index + 1}. ${payload}`);
+        lines.push(`  ${index + 1}. ${normalizeReportText(payload)}`);
       });
     }
   }
 
   if (result.documentAnalysis) {
     lines.push("", "Document X-Ray:");
-    lines.push(`  - File: ${result.documentAnalysis.fileName}`);
-    lines.push(`  - Type: ${result.documentAnalysis.fileType}`);
-    lines.push(`  - Size: ${result.documentAnalysis.fileSizeDisplay}`);
-    lines.push(`  - Parser: ${result.documentAnalysis.parser}`);
+    lines.push(`  - File: ${normalizeReportText(result.documentAnalysis.fileName)}`);
+    lines.push(`  - Type: ${normalizeReportText(result.documentAnalysis.fileType)}`);
+    lines.push(`  - Size: ${normalizeReportText(result.documentAnalysis.fileSizeDisplay)}`);
+    lines.push(`  - Parser: ${normalizeReportText(result.documentAnalysis.parser)}`);
     lines.push(`  - Inspectable: ${result.documentAnalysis.inspectable ? "yes" : "limited"}`);
     if (result.documentAnalysis.pageCount !== null) {
       lines.push(`  - Pages: ${result.documentAnalysis.pageCount}`);
@@ -2103,74 +2149,74 @@ export function buildPlainTextReport(result: MessageScanResult) {
     if (result.documentAnalysis.limitations.length > 0) {
       lines.push("  - Limitations:");
       result.documentAnalysis.limitations.forEach((item) => {
-        lines.push(`    * ${item}`);
+        lines.push(`    * ${normalizeReportText(item)}`);
       });
     }
     if (result.documentAnalysis.linkPairs.length > 0) {
       lines.push("", "Embedded Links:");
       result.documentAnalysis.linkPairs.forEach((link, index) => {
-        const displayText = link.display_text?.trim() || "Link";
-        const targetUrl = link.target_url?.trim() || "Unknown destination";
+        const displayText = normalizeReportText(link.display_text) || "Link";
+        const targetUrl = normalizeReportText(link.target_url) || "Unknown destination";
         lines.push(`  ${index + 1}. ${displayText} -> ${targetUrl}`);
       });
     }
     if (result.documentAnalysis.qrPayloads.length > 0) {
       lines.push("", "Document QR Payloads:");
       result.documentAnalysis.qrPayloads.forEach((payload, index) => {
-        lines.push(`  ${index + 1}. ${payload}`);
+        lines.push(`  ${index + 1}. ${normalizeReportText(payload)}`);
       });
     }
   }
 
   if (result.voiceAnalysis) {
     lines.push("", "Call Guard:");
-    lines.push(`  - Session ID: ${result.voiceAnalysis.sessionId}`);
-    lines.push(`  - State: ${result.voiceAnalysis.analysisState}`);
+    lines.push(`  - Session ID: ${normalizeReportText(result.voiceAnalysis.sessionId)}`);
+    lines.push(`  - State: ${normalizeReportText(result.voiceAnalysis.analysisState)}`);
     lines.push(`  - Elapsed: ${result.voiceAnalysis.elapsedSeconds}s`);
     lines.push(`  - Transcript words: ${result.voiceAnalysis.transcriptWordCount}`);
     if (result.voiceAnalysis.sourceFileName) {
-      lines.push(`  - Source file: ${result.voiceAnalysis.sourceFileName}`);
+      lines.push(`  - Source file: ${normalizeReportText(result.voiceAnalysis.sourceFileName)}`);
     }
     if (result.voiceAnalysis.sourceMediaType) {
-      lines.push(`  - Media type: ${result.voiceAnalysis.sourceMediaType}`);
+      lines.push(`  - Media type: ${normalizeReportText(result.voiceAnalysis.sourceMediaType)}`);
     }
     if (result.voiceAnalysis.transcriptionSource) {
-      lines.push(`  - Transcript source: ${result.voiceAnalysis.transcriptionSource}`);
+      lines.push(`  - Transcript source: ${normalizeReportText(result.voiceAnalysis.transcriptionSource)}`);
     }
     if (result.voiceAnalysis.transcriptionModel) {
-      lines.push(`  - Transcript model: ${result.voiceAnalysis.transcriptionModel}`);
+      lines.push(`  - Transcript model: ${normalizeReportText(result.voiceAnalysis.transcriptionModel)}`);
     }
     if (result.voiceAnalysis.liveAiState) {
-      lines.push(`  - Live AI state: ${result.voiceAnalysis.liveAiState}`);
+      lines.push(`  - Live AI state: ${normalizeReportText(result.voiceAnalysis.liveAiState)}`);
     }
     if (result.voiceAnalysis.liveAiConfidence) {
-      lines.push(`  - Live AI confidence: ${result.voiceAnalysis.liveAiConfidence}`);
+      lines.push(`  - Live AI confidence: ${normalizeReportText(result.voiceAnalysis.liveAiConfidence)}`);
     }
     if (result.voiceAnalysis.liveAiSummary) {
-      lines.push(`  - Live AI summary: ${result.voiceAnalysis.liveAiSummary}`);
+      lines.push(`  - Live AI summary: ${normalizeReportText(result.voiceAnalysis.liveAiSummary, true)}`);
     }
     if (result.voiceAnalysis.liveWarnings.length > 0) {
       lines.push("  - Live warnings:");
       result.voiceAnalysis.liveWarnings.forEach((warning) => {
-        lines.push(`    * ${warning}`);
+        lines.push(`    * ${normalizeReportText(warning)}`);
       });
     }
     if (result.voiceAnalysis.challengeQuestions.length > 0) {
       lines.push("  - Challenge questions:");
       result.voiceAnalysis.challengeQuestions.forEach((question, index) => {
-        lines.push(`    ${index + 1}. ${question}`);
+        lines.push(`    ${index + 1}. ${normalizeReportText(question)}`);
       });
     }
     if (result.voiceAnalysis.voiceSignals.length > 0) {
       lines.push("  - Voice-pattern signals:");
       result.voiceAnalysis.voiceSignals.forEach((signal) => {
-        lines.push(`    * [${signal.severity}] ${signal.detail}`);
+        lines.push(`    * [${normalizeReportText(signal.severity)}] ${normalizeReportText(signal.detail)}`);
       });
     }
     if (result.voiceAnalysis.transcriptSegments.length > 0) {
       lines.push("  - Transcript segments:");
       result.voiceAnalysis.transcriptSegments.slice(-8).forEach((segment, index) => {
-        lines.push(`    ${index + 1}. ${segment.text}`);
+        lines.push(`    ${index + 1}. ${normalizeReportText(segment.text)}`);
       });
     }
   }
@@ -2179,12 +2225,12 @@ export function buildPlainTextReport(result: MessageScanResult) {
     lines.push("", "Model Assessments:");
     result.modelRuns.forEach((run, index) => {
       lines.push(
-        `  ${index + 1}. ${run.model} -> ${SCAN_COPY[result.locale].riskLabels[modelRiskLabel(run.risk_level)]}${
+        `  ${index + 1}. ${normalizeReportText(run.model)} -> ${SCAN_COPY[result.locale].riskLabels[modelRiskLabel(run.risk_level)]}${
           typeof run.confidence === "number" ? ` (${Math.round(run.confidence * 100)}%)` : ""
         }`
       );
       if (run.explanation) {
-        lines.push(`     ${run.explanation}`);
+        lines.push(`     ${normalizeReportText(run.explanation, true)}`);
       }
     });
   }
@@ -2192,29 +2238,29 @@ export function buildPlainTextReport(result: MessageScanResult) {
   if (result.technicalDetails.length > 0) {
     lines.push("", "Technical Details:");
     result.technicalDetails.forEach((detail, index) => {
-      lines.push(`  ${index + 1}. [${detail.severity}] ${detail.label}: ${detail.detail}`);
+      lines.push(`  ${index + 1}. [${normalizeReportText(detail.severity)}] ${normalizeReportText(detail.label)}: ${normalizeReportText(detail.detail)}`);
     });
   }
 
   if (result.urlInspection.length > 0) {
     lines.push("", "Destination Inspection:");
     result.urlInspection.forEach((inspection, index) => {
-      lines.push(`  ${index + 1}. ${inspection.normalized_url}`);
+      lines.push(`  ${index + 1}. ${normalizeReportText(inspection.normalized_url)}`);
       if (inspection.blocked_reason) {
-        lines.push(`     blocked: ${inspection.blocked_reason}`);
+        lines.push(`     blocked: ${normalizeReportText(inspection.blocked_reason)}`);
         return;
       }
       if (inspection.error && !inspection.inspection_succeeded) {
-        lines.push(`     error: ${inspection.error}`);
+        lines.push(`     error: ${normalizeReportText(inspection.error)}`);
         return;
       }
-      lines.push(`     final: ${inspection.final_url ?? inspection.normalized_url}`);
+      lines.push(`     final: ${normalizeReportText(inspection.final_url ?? inspection.normalized_url)}`);
       lines.push(`     redirects: ${inspection.redirect_chain.length}`);
       if (typeof inspection.status_code === "number") {
         lines.push(`     status: ${inspection.status_code}`);
       }
       if (inspection.page_title) {
-        lines.push(`     title: ${inspection.page_title}`);
+        lines.push(`     title: ${normalizeReportText(inspection.page_title)}`);
       }
     });
   }
@@ -2222,16 +2268,16 @@ export function buildPlainTextReport(result: MessageScanResult) {
   if (result.urlEvidence.length > 0) {
     lines.push("", "URL Evidence:");
     result.urlEvidence.forEach((item, index) => {
-      lines.push(`  ${index + 1}. ${item.domain} -> registered as ${item.registrable_domain}`);
+      lines.push(`  ${index + 1}. ${normalizeReportText(item.domain)} -> registered as ${normalizeReportText(item.registrable_domain)}`);
     });
   }
 
   if (result.quickTip) {
-    lines.push("", `Quick Tip: ${result.quickTip}`);
+    lines.push("", `Quick Tip: ${normalizeReportText(result.quickTip, true)}`);
   }
 
   if (result.privacyNote) {
-    lines.push("", `[${reportCopy.privacyMode}: ${result.privacyNote}]`);
+    lines.push("", `[${reportCopy.privacyMode}: ${normalizeReportText(result.privacyNote, true)}]`);
   }
 
   lines.push("", `=== ${reportCopy.end} ===`);
@@ -2253,11 +2299,8 @@ export async function fetchMessageSamples() {
 }
 
 export async function fetchScanHistory(locale: string) {
-  const response = await fetch(`${API_BASE_URL}/scan/history`, {
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
+  const response = await fetchHistoryResponse();
+  if (!response) {
     return [] as ScanHistoryItem[];
   }
 
@@ -2274,11 +2317,8 @@ export async function fetchScanHistory(locale: string) {
 }
 
 export async function fetchDetailedScanHistory(locale: string) {
-  const response = await fetch(`${API_BASE_URL}/scan/history`, {
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
+  const response = await fetchHistoryResponse();
+  if (!response) {
     return [] as DetailedScanHistoryItem[];
   }
 
@@ -2361,6 +2401,7 @@ export async function fetchScanCapabilities() {
       screenshotRequiresApiKey: true,
       llmProvider: null,
       llmModel: null,
+      scanHistoryAvailable: false,
       voiceLiveBrowserMode: true
     } as ScanCapabilities;
   }
@@ -2370,17 +2411,23 @@ export async function fetchScanCapabilities() {
     screenshot_requires_api_key: boolean;
     llm_provider: string | null;
     llm_model: string | null;
+    scan_history_available?: boolean;
     voice_live_browser_mode?: boolean;
     voice_live_streaming_available?: boolean;
     voice_recording_upload_available?: boolean;
     voice_recording_auto_transcription_available?: boolean;
   };
 
+  if (typeof payload.scan_history_available === "boolean") {
+    scanHistoryAvailableCache = payload.scan_history_available;
+  }
+
   return {
     screenshotAnalysisAvailable: payload.screenshot_analysis_available,
     screenshotRequiresApiKey: payload.screenshot_requires_api_key,
     llmProvider: payload.llm_provider,
     llmModel: payload.llm_model,
+    scanHistoryAvailable: payload.scan_history_available,
     voiceLiveBrowserMode: payload.voice_live_browser_mode,
     voiceLiveStreamingAvailable: payload.voice_live_streaming_available,
     voiceRecordingUploadAvailable: payload.voice_recording_upload_available,

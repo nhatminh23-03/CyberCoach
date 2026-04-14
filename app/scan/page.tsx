@@ -43,5 +43,5 @@ export default function ScanPage({ searchParams }: ScanPageProps) {
     return <VoiceScanPage />;
   }
 
-  return <MessageScanPage initialQuery={initialQuery} initialView={initialView} initialAutoRun={initialAutoRun} />;
+  return <MessageScanPage initialQuery={initialQuery} showArNotice={initialView === "ar"} initialAutoRun={initialAutoRun} />;
 }

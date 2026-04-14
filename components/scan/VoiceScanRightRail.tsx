@@ -352,15 +352,15 @@ export function VoiceScanRightRail({
         </div>
       </section>
 
-      <section className="animate-fade-up space-y-6" style={{ animationDelay: "240ms" }}>
-        <div className="space-y-2">
-          <h2 className="font-headline text-2xl font-bold tracking-tight text-vellum">Session history</h2>
-          <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">
-            Finalized call summaries
-          </p>
-        </div>
+      {recentItems.length > 0 ? (
+        <section className="animate-fade-up space-y-6" style={{ animationDelay: "240ms" }}>
+          <div className="space-y-2">
+            <h2 className="font-headline text-2xl font-bold tracking-tight text-vellum">Session history</h2>
+            <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">
+              Finalized call summaries
+            </p>
+          </div>
 
-        {recentItems.length > 0 ? (
           <div className="space-y-4">
             <button
               type="button"
@@ -400,12 +400,8 @@ export function VoiceScanRightRail({
               </div>
             </div>
           </div>
-        ) : (
-          <div className="ghost-border bg-surface-container-low p-5 text-sm leading-relaxed text-on-surface-variant">
-            Finalized call reports will appear here after you stop a live session.
-          </div>
-        )}
-      </section>
+        </section>
+      ) : null}
     </aside>
   );
 }

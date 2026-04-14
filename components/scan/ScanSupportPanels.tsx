@@ -122,7 +122,7 @@ export function ScanSupportPanels({
             </p>
             <p className="text-sm leading-relaxed text-on-surface">
               {privacyMode
-                ? "Nothing is stored. Your scan is analyzed ephemerally, and sensitive details can be redacted before analysis."
+                ? "Nothing is stored. Privacy Mode redacts sensitive details for analysis and keeps raw text out of the returned result when possible."
                 : "Nothing is stored. Your scan is handled ephemerally for review during this session."}
             </p>
           </div>

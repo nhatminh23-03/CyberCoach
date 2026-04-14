@@ -6,6 +6,7 @@ import { LockIcon, ShieldCheckIcon } from "@/components/home/icons";
 
 type HomeCapabilitiesResponse = {
   screenshot_analysis_available?: boolean;
+  scan_history_available?: boolean;
   voice_live_browser_mode?: boolean;
   voice_recording_upload_available?: boolean;
 };
@@ -19,6 +20,7 @@ type StatusState = {
   backendReachable: boolean;
   readyModes: number;
   historyCount: number;
+  historyAvailable: boolean;
 };
 
 const TOTAL_MODES = 5;
@@ -28,7 +30,8 @@ export function HomeStatusCard() {
     loading: true,
     backendReachable: false,
     readyModes: 0,
-    historyCount: 0
+    historyCount: 0,
+    historyAvailable: false
   });
 
   useEffect(() => {
@@ -42,12 +45,14 @@ export function HomeStatusCard() {
         ]);
 
         let readyModes = 0;
+        let historyAvailable = false;
         if (capabilitiesResponse.ok) {
           const capabilities = (await capabilitiesResponse.json()) as HomeCapabilitiesResponse;
           const screenshotReady = Boolean(capabilities.screenshot_analysis_available);
           const voiceReady = Boolean(
             capabilities.voice_live_browser_mode || capabilities.voice_recording_upload_available
           );
+          historyAvailable = Boolean(capabilities.scan_history_available);
 
           readyModes = 3;
           if (screenshotReady) {
@@ -69,7 +74,8 @@ export function HomeStatusCard() {
             loading: false,
             backendReachable: capabilitiesResponse.ok,
             readyModes: capabilitiesResponse.ok ? readyModes : 0,
-            historyCount
+            historyCount,
+            historyAvailable
           });
         }
       } catch {
@@ -78,7 +84,8 @@ export function HomeStatusCard() {
             loading: false,
             backendReachable: false,
             readyModes: 0,
-            historyCount: 0
+            historyCount: 0,
+            historyAvailable: false
           });
         }
       }
@@ -104,7 +111,9 @@ export function HomeStatusCard() {
   const statusDetail = status.backendReachable ? "Backend connected" : "Backend unavailable";
   const progressWidth = status.loading ? "36%" : `${Math.max(0, Math.min(100, (status.readyModes / TOTAL_MODES) * 100))}%`;
   const privacyCopy =
-    status.historyCount > 0
+    !status.historyAvailable
+      ? "New scans start with Privacy Mode on. Shared scan history is turned off in this environment to avoid cross-user leakage."
+      : status.historyCount > 0
       ? `New scans start with Privacy Mode on. This session currently has ${status.historyCount} recent result${status.historyCount === 1 ? "" : "s"} available to reopen.`
       : "New scans start with Privacy Mode on. Recent results stay available only for this backend session.";
 

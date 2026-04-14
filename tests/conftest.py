@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 from backend.app.services.history import history_store
+from backend.app.services.rate_limit import rate_limiter
 from backend.app.services.voice_guard import voice_session_store
 from tests.helpers.fixtures import load_fixture_json, load_snapshot_json
 
@@ -16,8 +17,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(autouse=True)
 def reset_runtime_state(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
-    history_store._entries.clear()
-    history_store._next_id = 1
+    history_store.set_enabled(False)
+    history_store.reset()
+    rate_limiter.reset()
     voice_session_store._sessions.clear()
 
     if request.node.get_closest_marker("live_model"):
@@ -39,8 +41,9 @@ def reset_runtime_state(monkeypatch: pytest.MonkeyPatch, request: pytest.Fixture
 
     yield
 
-    history_store._entries.clear()
-    history_store._next_id = 1
+    history_store.set_enabled(False)
+    history_store.reset()
+    rate_limiter.reset()
     voice_session_store._sessions.clear()
 
 
