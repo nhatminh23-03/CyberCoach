@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 
@@ -48,6 +49,7 @@ export default function RootLayout({
       </head>
       <body className="bg-background font-body text-on-background antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   );
